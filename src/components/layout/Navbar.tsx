@@ -160,16 +160,13 @@ export const Navbar: React.FC = () => {
           <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
             <div className="relative">
               <div className="w-8 h-8 rounded-full bg-linear-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-xs">
-                JD
+                D
               </div>
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
             </div>
             <div className="hidden lg:block text-left">
               <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-none">
-                Jury Demo Admin
-              </p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 leading-none">
-                Team Antigravity
+                Demo
               </p>
             </div>
           </div>
