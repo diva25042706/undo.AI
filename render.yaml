@@ -1,0 +1,38 @@
+services:
+  # -----------------------------------------
+  # 1. UNDO.AI Backend API (FastAPI)
+  # -----------------------------------------
+  - type: web
+    name: undo-ai-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:///./undo_ai.db
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: AI_PROVIDER
+        value: mock
+      - key: LOG_LEVEL
+        value: INFO
+    autoDeploy: true
+
+  # -----------------------------------------
+  # 2. UNDO.AI Frontend UI (React / Vite)
+  # -----------------------------------------
+  - type: web
+    name: undo-ai-frontend
+    runtime: static
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    autoDeploy: true
