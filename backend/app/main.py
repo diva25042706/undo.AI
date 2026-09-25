@@ -128,11 +128,25 @@ async def undo_ai_exception_handler(request: Request, exc: UndoAIException):
     )
 
 
-# Health & Readiness Checks
+# Health, Root & Readiness Checks
+@app.get("/", tags=["General"])
+async def root() -> Dict[str, Any]:
+    """Root endpoint providing service information and navigation."""
+    return {
+        "service": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "status": "online",
+        "docs": "/docs",
+        "health": "/health",
+        "message": "UNDO.AI Backend Engine is running. Visit /docs for the interactive Swagger API documentation."
+    }
+
+
 @app.get("/health", tags=["Health"])
 async def health_check() -> Dict[str, Any]:
     """Basic service health check."""
     return {"status": "healthy", "service": settings.APP_NAME, "version": settings.APP_VERSION}
+
 
 
 @app.get("/ready", tags=["Health"])
