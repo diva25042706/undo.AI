@@ -13,6 +13,9 @@ from backend.app.api import (
     demo,
     metrics,
     policies,
+    recovery,
+    payment,
+    dataset,
     snapshots,
     undo,
     websocket,
@@ -22,15 +25,21 @@ from backend.app.core.config import settings
 from backend.app.core.database import Base, engine
 from backend.app.core.exceptions import UndoAIException
 from backend.app.core.logging import logger
+from backend.app.services.sandbox_service import SandboxService
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Ensure database tables are created
+    # Startup: Ensure database tables are created & sandbox initialized
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION} ({settings.ENVIRONMENT})")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables initialized successfully.")
+    try:
+        SandboxService.reset_sandbox()
+        logger.info("Physical demo workspace sandbox initialized.")
+    except Exception as e:
+        logger.warning(f"Sandbox init warning: {e}")
     yield
     # Shutdown: Dispose engine connections
     await engine.dispose()
@@ -178,6 +187,9 @@ app.include_router(policies.router, prefix=api_v1_prefix)
 app.include_router(audit.router, prefix=api_v1_prefix)
 app.include_router(workspace.router, prefix=api_v1_prefix)
 app.include_router(metrics.router, prefix=api_v1_prefix)
+app.include_router(recovery.router, prefix=api_v1_prefix)
+app.include_router(payment.router, prefix=api_v1_prefix)
+app.include_router(dataset.router, prefix=api_v1_prefix)
 app.include_router(demo.router, prefix=api_v1_prefix)
 
 # Register WebSockets router

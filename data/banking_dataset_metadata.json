@@ -1,0 +1,55 @@
+{
+  "dataset_name": "UNDO.AI Synthetic FinTech Autonomous Payment Dataset",
+  "description": "Deterministic benchmark dataset for AI Payment Guardian anomaly detection, independent verification, and intelligent recovery.",
+  "generated_at": "2026-10-04T18:57:41.976336+00:00",
+  "random_seed": 42,
+  "total_records": 10000,
+  "normal_records": 9200,
+  "anomaly_records": 800,
+  "anomaly_distribution": {
+    "NONE (NORMAL)": {
+      "count": 9200,
+      "percentage": "92.0%"
+    },
+    "WRONG_RECIPIENT": {
+      "count": 200,
+      "percentage": "2.0%"
+    },
+    "WRONG_ACCOUNT": {
+      "count": 200,
+      "percentage": "2.0%"
+    },
+    "WRONG_AMOUNT": {
+      "count": 100,
+      "percentage": "1.0%"
+    },
+    "DUPLICATE_PAYMENT": {
+      "count": 100,
+      "percentage": "1.0%"
+    },
+    "PAYMENT_TIMEOUT": {
+      "count": 100,
+      "percentage": "1.0%"
+    },
+    "UNKNOWN_STATE": {
+      "count": 100,
+      "percentage": "1.0%"
+    }
+  },
+  "total_batches": 40,
+  "records_per_batch": 250,
+  "supported_recovery_strategies": [
+    "NONE",
+    "CANCEL",
+    "COMPENSATE",
+    "VERIFY_BEFORE_RETRY",
+    "HUMAN_ESCALATION"
+  ],
+  "recovery_strategy_distribution": {
+    "NONE": 9200,
+    "CANCEL": 382,
+    "COMPENSATE": 179,
+    "VERIFY_BEFORE_RETRY": 200,
+    "HUMAN_ESCALATION": 39
+  }
+}

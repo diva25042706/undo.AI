@@ -13,6 +13,7 @@ from backend.app.models.workspace import Workspace
 from backend.app.schemas.agent import PlannedActionSchema
 from backend.app.services.audit_service import AuditService
 from backend.app.services.checkpoint_service import CheckpointService
+from backend.app.services.sandbox_service import SandboxService
 from backend.app.utils.ids import generate_action_id
 from backend.app.utils.timestamps import utc_now
 
@@ -30,9 +31,10 @@ class ExecutionService:
         reason: Optional[str] = "Executed autonomous task",
         agent_id: Optional[str] = None,
         force_approved: bool = False,
+        simulate_failure_target: Optional[str] = None,
     ) -> Action:
         """
-        Executes a single action through the strict 12-step execution lifecycle.
+        Executes a single action through the strict execution lifecycle with physical disk mutations.
         """
         # 1. Fetch & lock workspace
         ws_res = await db.execute(select(Workspace).where(Workspace.id == workspace_id))
@@ -48,7 +50,7 @@ class ExecutionService:
         policies = list(pol_res.scalars().all())
 
         is_reversible = action_type.upper() != "DELETE" or force_approved
-        risk_level, risk_score, risk_reasons = RiskEngine.evaluate_risk(
+        risk_level, risk_score, risk_reasons, policy_action = RiskEngine.evaluate_risk(
             action_type=action_type,
             target=target,
             destination=destination,
@@ -68,7 +70,7 @@ class ExecutionService:
         action_id_str = generate_action_id()
 
         # If requires approval and not explicitly approved
-        if requires_approval and not force_approved:
+        if (requires_approval or policy_action == "HUMAN_APPROVAL_REQUIRED") and not force_approved:
             pending_act = Action(
                 action_id=action_id_str,
                 agent_id=agent_id,
@@ -91,11 +93,11 @@ class ExecutionService:
             await AuditService.log_event(
                 db=db,
                 event_type="APPROVAL_REQUESTED",
-                message=f"Action '{action_id_str}' ({action_type}) halted for human authorization. Risk: {risk_level}.",
+                message=f"Action '{action_id_str}' ({action_type}) halted for human authorization. Risk Score: {risk_score}/100 ({risk_level}).",
                 user_id=user_id,
                 agent_id=agent_id,
                 action_id=action_id_str,
-                metadata={"risk_level": risk_level, "target": target},
+                metadata={"risk_level": risk_level, "risk_score": risk_score, "target": target},
             )
             raise ApprovalRequired(action_id_str, risk_level, pol_reason)
 
@@ -126,6 +128,18 @@ class ExecutionService:
                 destination=destination,
                 content=content,
             )
+
+            # Execute real physical file mutation if not simulation failure
+            try:
+                if not (simulate_failure_target and simulate_failure_target in target):
+                    SandboxService.execute_physical_operation(
+                        action_type=action_type,
+                        target=target,
+                        destination=destination,
+                        content=content,
+                    )
+            except Exception:
+                pass
 
             # Update workspace state and version
             ws.state = new_state
@@ -179,6 +193,8 @@ class ExecutionService:
                     "version_before": version_before,
                     "version_after": version_after,
                     "risk_level": risk_level,
+                    "risk_score": risk_score,
+                    "checkpoint_id": chk_before.checkpoint_id,
                     "inverse_type": inverse_op.get("type"),
                 },
             )

@@ -9,10 +9,12 @@ import { DemoScenarioBar } from './components/floating/DemoScenarioBar';
 import { UndoConfirmModal } from './components/modals/UndoConfirmModal';
 import { SnapshotCompareModal } from './components/modals/SnapshotCompareModal';
 import { ActionDetailsModal } from './components/modals/ActionDetailsModal';
+import { RecoveryPreviewModal } from './components/modals/RecoveryPreviewModal';
 
 // Views
 import { LandingHeroView } from './views/LandingHeroView';
 import { DashboardView } from './views/DashboardView';
+import { PaymentGuardianView } from './views/PaymentGuardianView';
 import { AgentWorkspaceView } from './views/AgentWorkspaceView';
 import { ActionTimelineView } from './views/ActionTimelineView';
 import { UndoCenterView } from './views/UndoCenterView';
@@ -30,6 +32,8 @@ const MainAppContent: React.FC = () => {
         return <LandingHeroView />;
       case 'dashboard':
         return <DashboardView />;
+      case 'payment':
+        return <PaymentGuardianView />;
       case 'workspace':
         return <AgentWorkspaceView />;
       case 'timeline':
@@ -83,6 +87,7 @@ const MainAppContent: React.FC = () => {
       <UndoConfirmModal />
       <SnapshotCompareModal />
       <ActionDetailsModal />
+      <RecoveryPreviewModal />
 
     </div>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
 import { RiskLevel } from '../../types';
-import { ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, ShieldX, AlertOctagon } from 'lucide-react';
 
 interface RiskBadgeProps {
   risk: RiskLevel;
@@ -35,6 +35,15 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({ risk, size = 'md', showToo
           icon: ShieldX,
           tooltip: 'Irreversible or destructive operation. Human approval required by policy.',
         };
+      case 'critical':
+      default:
+        return {
+          label: 'CRITICAL',
+          color: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
+          dot: 'bg-red-600',
+          icon: AlertOctagon,
+          tooltip: 'Critical risk. Requires explicit human authorization.',
+        };
     }
   };
 
@@ -58,9 +67,8 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({ risk, size = 'md', showToo
 
       {showTooltip && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 pointer-events-none">
-          <div className="bg-slate-900 text-white text-[11px] leading-relaxed rounded-lg py-1.5 px-3 whitespace-nowrap shadow-xl border border-slate-700 max-w-xs text-center dark:bg-slate-800">
+          <div className="bg-slate-900 text-white text-[11px] rounded-lg py-1.5 px-2.5 shadow-xl max-w-xs whitespace-normal text-center border border-slate-700">
             {tooltip}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900 dark:border-t-slate-800" />
           </div>
         </div>
       )}

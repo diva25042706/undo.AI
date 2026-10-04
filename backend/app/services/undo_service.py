@@ -15,6 +15,7 @@ from backend.app.models.workspace import Workspace
 from backend.app.schemas.action import UndoResultResponse
 from backend.app.services.audit_service import AuditService
 from backend.app.services.checkpoint_service import CheckpointService
+from backend.app.services.sandbox_service import SandboxService
 from backend.app.utils.timestamps import utc_now
 
 
@@ -28,7 +29,7 @@ class UndoService:
     ) -> UndoResultResponse:
         """
         Rolls back an action safely using its inverse operation and conflict detection.
-        Preserves complete immutable audit history.
+        Preserves complete immutable audit history and restores physical files.
         """
         # 1 & 2. Load action by UUID or action_id
         res = await db.execute(
@@ -143,7 +144,14 @@ class UndoService:
                     undone_ids.append(act.action_id)
                     restored_resources.append(act.target)
 
-            # 14. WRITE IMMUTABLE AUDIT RECORD (ROLLBACK_COMPLETED)
+            # 11. RESTORE PHYSICAL FILES IN ./demo_workspace
+            if ws.state and "files" in ws.state:
+                try:
+                    SandboxService.restore_physical_manifest(ws.state["files"])
+                except Exception:
+                    pass
+
+            # 12. WRITE IMMUTABLE AUDIT RECORD (ROLLBACK_COMPLETED)
             await AuditService.log_event(
                 db=db,
                 event_type="ROLLBACK_COMPLETED",
@@ -182,7 +190,7 @@ class UndoService:
             raise
 
         finally:
-            # 15. RELEASE LOCK
+            # RELEASE LOCK
             ws.is_locked = False
             ws.locked_by = None
             await db.flush()

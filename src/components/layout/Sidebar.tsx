@@ -39,6 +39,7 @@ export const Sidebar: React.FC = () => {
 
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'payment', label: 'Payment Guardian', icon: Zap, badge: 'Flagship', badgeColor: 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold' },
     { id: 'workspace', label: 'Agent Workspace', icon: Bot, badge: 'Live', badgeColor: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
     { id: 'timeline', label: 'Action Timeline', icon: History },
     { 

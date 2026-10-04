@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActionStatus } from '../../types';
-import { CheckCircle2, RotateCcw, XCircle, Clock, Loader2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, RotateCcw, XCircle, Clock, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
 
 interface StatusBadgeProps {
   status: ActionStatus;
@@ -18,15 +18,17 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' })
           spin: false,
         };
       case 'rolling_back':
+      case 'recovering':
         return {
-          label: 'Rolling Back...',
+          label: status === 'recovering' ? 'Recovering...' : 'Rolling Back...',
           icon: Loader2,
           classes: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50',
           spin: true,
         };
       case 'undone':
+      case 'recovered':
         return {
-          label: 'Undone',
+          label: status === 'recovered' ? 'Recovered' : 'Undone',
           icon: RotateCcw,
           classes: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800/50',
           spin: false,
@@ -46,6 +48,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' })
           spin: false,
         };
       case 'in_progress':
+      default:
         return {
           label: 'In Progress',
           icon: Clock,

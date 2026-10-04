@@ -56,7 +56,7 @@ class PlannerService:
             is_reversible = raw.get("is_reversible", True)
 
             # Evaluate Risk
-            risk_level, risk_score, risk_reasons = RiskEngine.evaluate_risk(
+            risk_level, risk_score, risk_reasons, policy_action = RiskEngine.evaluate_risk(
                 action_type=action_type,
                 target=target,
                 destination=destination,

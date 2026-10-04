@@ -1,0 +1,66 @@
+{
+  "dataset_name": "UNDO.AI E-commerce Autonomous Order & Settlement Benchmark",
+  "scenario": "E-commerce Autonomous Order Agent \u2014 Orders, Payments, Cancellations, Refunds & Delivery",
+  "generated_at": "2026-10-04T19:01:02.951990+00:00",
+  "random_seed": 42,
+  "total_records": 10000,
+  "normal_records": 9200,
+  "anomaly_records": 800,
+  "anomaly_distribution": {
+    "NONE (NORMAL)": {
+      "count": 9200,
+      "percentage": "92.0%"
+    },
+    "WRONG_AMOUNT": {
+      "count": 200,
+      "percentage": "2.0%"
+    },
+    "DUPLICATE_ORDER": {
+      "count": 150,
+      "percentage": "1.5%"
+    },
+    "WRONG_REFUND": {
+      "count": 150,
+      "percentage": "1.5%"
+    },
+    "WRONG_CUSTOMER": {
+      "count": 100,
+      "percentage": "1.0%"
+    },
+    "CANCEL_FAILURE": {
+      "count": 100,
+      "percentage": "1.0%"
+    },
+    "UNKNOWN_STATE": {
+      "count": 100,
+      "percentage": "1.0%"
+    }
+  },
+  "order_states": [
+    "CREATED",
+    "PAID",
+    "PROCESSING",
+    "SHIPPED",
+    "DELIVERED",
+    "CANCELLED",
+    "REFUND_PENDING",
+    "REFUNDED",
+    "UNKNOWN"
+  ],
+  "supported_recovery_strategies": [
+    "NONE",
+    "CANCEL",
+    "CANCEL_DUPLICATE",
+    "COMPENSATE",
+    "VERIFY_BEFORE_RETRY",
+    "HUMAN_ESCALATION"
+  ],
+  "recovery_strategy_distribution": {
+    "NONE": 9200,
+    "COMPENSATE": 285,
+    "HUMAN_ESCALATION": 147,
+    "CANCEL": 178,
+    "VERIFY_BEFORE_RETRY": 100,
+    "CANCEL_DUPLICATE": 90
+  }
+}

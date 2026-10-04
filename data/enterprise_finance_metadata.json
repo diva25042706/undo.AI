@@ -1,0 +1,71 @@
+{
+  "dataset_name": "UNDO.AI Enterprise AI Finance Autonomous Recovery Benchmark",
+  "scenario": "Enterprise AI Finance Agent \u2014 Payroll, Invoices, Vendor Disbursements & Expense Settlement",
+  "generated_at": "2026-10-04T18:59:58.331678+00:00",
+  "random_seed": 42,
+  "total_records": 10000,
+  "normal_records": 9000,
+  "anomaly_records": 1000,
+  "anomaly_distribution": {
+    "NONE (NORMAL)": {
+      "count": 9000,
+      "percentage": "90.0%"
+    },
+    "WRONG_VENDOR": {
+      "count": 200,
+      "percentage": "2.0%"
+    },
+    "WRONG_AMOUNT": {
+      "count": 200,
+      "percentage": "2.0%"
+    },
+    "DUPLICATE_PAYMENT": {
+      "count": 150,
+      "percentage": "1.5%"
+    },
+    "UNAPPROVED_PAYMENT": {
+      "count": 100,
+      "percentage": "1.0%"
+    },
+    "WRONG_ACCOUNT": {
+      "count": 100,
+      "percentage": "1.0%"
+    },
+    "TIMEOUT": {
+      "count": 100,
+      "percentage": "1.0%"
+    },
+    "UNKNOWN_STATE": {
+      "count": 50,
+      "percentage": "0.5%"
+    },
+    "OTHER_POLICY_VIOLATION": {
+      "count": 100,
+      "percentage": "1.0%"
+    }
+  },
+  "total_batches": 40,
+  "records_per_batch": 250,
+  "supported_entity_types": [
+    "EMPLOYEE",
+    "VENDOR",
+    "CONTRACTOR",
+    "SUPPLIER"
+  ],
+  "supported_recovery_strategies": [
+    "NONE",
+    "CANCEL",
+    "CANCEL_DUPLICATE",
+    "COMPENSATE",
+    "BLOCK + HUMAN_APPROVAL",
+    "VERIFY_BEFORE_RETRY"
+  ],
+  "recovery_strategy_distribution": {
+    "NONE": 9000,
+    "CANCEL": 300,
+    "BLOCK + HUMAN_APPROVAL": 208,
+    "COMPENSATE": 247,
+    "CANCEL_DUPLICATE": 95,
+    "VERIFY_BEFORE_RETRY": 150
+  }
+}

@@ -11,6 +11,9 @@ export const INITIAL_LIVE_AGENT: LiveAgentState = {
   progress: 82,
   activeSince: '10:30 AM',
   currentActionId: 'ACT-92831',
+  riskScore: 24,
+  policyTier: 'AUTO_EXECUTE',
+  checkpointId: 'CP-104',
 };
 
 export const INITIAL_ACTIONS: AgentAction[] = [

@@ -22,12 +22,22 @@ import {
   Clock,
   Layers,
   ChevronRight,
+  Sliders,
+  Code2,
+  Bug,
 } from 'lucide-react';
 
 export const AgentWorkspaceView: React.FC = () => {
   const {
     addNewAction,
     addToast,
+    expectedState,
+    verificationResult,
+    recoveryStatus,
+    simulateFailure,
+    setSimulateFailure,
+    runIndependentVerification,
+    executeIntelligentRecovery,
     setSelectedActionForUndo,
     setSelectedActionForDetails,
     isDemoRunning,
@@ -35,20 +45,20 @@ export const AgentWorkspaceView: React.FC = () => {
   } = useAgent();
 
   const [inputMessage, setInputMessage] = useState('');
-  const [isPlanning, setIsPlanning] = useState(false);
-  const [hasPlanProposed, setHasPlanProposed] = useState(true);
+  const [showExpectedStateDrawer, setShowExpectedStateDrawer] = useState(false);
   const [planApproved, setPlanApproved] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionProgress, setExecutionProgress] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [requiresApprovalConfirmed, setRequiresApprovalConfirmed] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
 
   const planItems = [
-    { id: 1, title: 'Create /docs folder', target: '/project/docs', type: 'create_folder', safe: true, risk: 'low' as const },
-    { id: 2, title: 'Move README.md to /docs', target: 'README.md', type: 'move_file', safe: true, risk: 'low' as const },
-    { id: 3, title: 'Move architecture.pdf to /docs', target: 'architecture.pdf', type: 'move_file', safe: true, risk: 'low' as const },
-    { id: 4, title: 'Rename final_report.pdf -> final_report_v2.pdf', target: 'final_report.pdf', type: 'rename_file', safe: true, risk: 'low' as const },
-    { id: 5, title: 'Delete 2 duplicate cache files', target: 'tmp/cache-old.log', type: 'delete_file', safe: false, risk: 'high' as const, note: 'Irreversible action: Requires explicit human override' },
+    { id: 1, title: 'Create /docs folder', target: '/project/docs', type: 'create_folder', safe: true, risk: 'low' as const, riskScore: 10, policy: 'AUTO_EXECUTE' },
+    { id: 2, title: 'Move README.md to /docs', target: 'README.md', type: 'move_file', safe: true, risk: 'low' as const, riskScore: 20, policy: 'AUTO_EXECUTE' },
+    { id: 3, title: 'Move architecture.pdf to /docs', target: 'architecture.pdf', type: 'move_file', safe: true, risk: 'low' as const, riskScore: 20, policy: 'AUTO_EXECUTE' },
+    { id: 4, title: 'Rename report.pdf -> final_report_v2.pdf', target: 'report.pdf', type: 'rename_file', safe: true, risk: 'low' as const, riskScore: 15, policy: 'AUTO_EXECUTE' },
+    { id: 5, title: 'Purge stale build cache duplicate files', target: 'duplicate_cache.tmp', type: 'delete_file', safe: false, risk: 'high' as const, riskScore: 85, policy: 'HUMAN_APPROVAL_REQUIRED', note: 'Destructive deletion: Requires explicit human override' },
   ];
 
   const handleExecuteSafeActions = async () => {
@@ -59,20 +69,18 @@ export const AgentWorkspaceView: React.FC = () => {
     for (let i = 0; i < planItems.length; i++) {
       const item = planItems[i];
       if (!item.safe && !requiresApprovalConfirmed) {
-        // Skip high-risk action until approved
         continue;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 750));
       setCompletedSteps((prev) => [...prev, item.id]);
       setExecutionProgress(((i + 1) / (requiresApprovalConfirmed ? 5 : 4)) * 100);
 
-      // Register into global undo actions
       addNewAction({
         agentId: 'agent-1',
-        agentName: 'Workspace Agent',
+        agentName: 'Workspace Research Agent',
         agentAvatar: '🤖',
-        agentRole: 'Workspace Organizer',
+        agentRole: 'Documentation & File Organizer',
         type: item.type as any,
         title: item.title,
         actionSummary: `${item.title} during automated reorganization`,
@@ -82,6 +90,9 @@ export const AgentWorkspaceView: React.FC = () => {
         newStateDesc: `Organized path: ${item.target}`,
         reason: 'Automated documentation & asset cleanup pass.',
         risk: item.risk,
+        riskScore: item.riskScore,
+        policyAction: item.policy,
+        checkpointId: 'CP-001',
         status: 'completed',
         reversible: item.safe,
         rollbackAvailable: item.safe,
@@ -93,17 +104,18 @@ export const AgentWorkspaceView: React.FC = () => {
     setIsExecuting(false);
     addToast({
       type: 'success',
-      title: 'Agent Workflow Completed',
-      message: 'Safe actions executed successfully with automated rollback checkpoints.',
+      title: 'Agent Actions Completed',
+      message: 'Physical file actions executed with pre-mutation checkpoints.',
     });
   };
 
-  const handleApproveHighRisk = () => {
+  const handleAuthorizeHighRisk = () => {
     setRequiresApprovalConfirmed(true);
+    setShowApprovalModal(false);
     addToast({
       type: 'warning',
-      title: 'High-Risk Override Granted',
-      message: 'Irreversible deletion authorized by user admin.',
+      title: 'High-Risk Override Authorized',
+      message: 'Human auditor approved deletion of duplicate_cache.tmp.',
     });
   };
 
@@ -115,7 +127,7 @@ export const AgentWorkspaceView: React.FC = () => {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1">
             <Bot className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-            <span>Interactive Autonomous Agent Console</span>
+            <span>Interactive Autonomous Agent Console & Expected State Engine</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
             Agent Workspace
@@ -123,17 +135,38 @@ export const AgentWorkspaceView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Controlled failure injector button */}
+          <button
+            onClick={() => {
+              const nextVal = !simulateFailure;
+              setSimulateFailure(nextVal);
+              addToast({
+                type: nextVal ? 'warning' : 'info',
+                title: nextVal ? 'Controlled Failure Enabled' : 'Controlled Failure Disabled',
+                message: nextVal ? 'Injected error: architecture.pdf will be missing from /docs' : 'Clean baseline restored.',
+              });
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-colors ${
+              simulateFailure
+                ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700'
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            <Bug className="w-3.5 h-3.5 text-amber-500" />
+            <span>Simulate Error: Incomplete Move</span>
+          </button>
+
           <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            Protected by Undo Engine
+            Protected by CP-001 Checkpoint
           </span>
         </div>
       </div>
 
-      {/* Grid Layout: Left Chat & Proposal (3 cols) | Right Virtual File Inspector (2 cols) */}
+      {/* Grid Layout: Left Chat & Proposal (7 cols) | Right Virtual File Inspector (5 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Column: Chat Conversation & Action Plan (7 cols) */}
+        {/* Left Column: Chat Conversation & Action Plan */}
         <div className="lg:col-span-7 space-y-5">
           
           {/* Conversation History */}
@@ -160,22 +193,47 @@ export const AgentWorkspaceView: React.FC = () => {
                   <span className="font-bold text-slate-900 dark:text-white text-xs">
                     Workspace Research Agent
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">Verified Safe</span>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded">
+                    Risk: 24/100 (AUTO EXECUTE)
+                  </span>
                 </div>
 
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                  I can do that! I inspected your directory structure and found 14 files.
+                  I analyzed your workspace and generated a formal <strong>Expected State Contract</strong>.
                 </p>
 
-                <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 text-xs space-y-1 text-slate-600 dark:text-slate-300">
-                  <p className="font-bold text-slate-800 dark:text-slate-200">Before I proceed:</p>
-                  <p>• 4 files will be organized and moved to /docs</p>
-                  <p>• 1 file will be standardized in version name</p>
-                  <p>• 2 duplicate temp cache files identified for deletion</p>
+                <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 text-xs space-y-1.5 text-slate-600 dark:text-slate-300">
+                  <div className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200">
+                    <span>Expected Outcome Specifications:</span>
+                    <button
+                      onClick={() => setShowExpectedStateDrawer(!showExpectedStateDrawer)}
+                      className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-semibold"
+                    >
+                      <Code2 className="w-3.5 h-3.5" />
+                      {showExpectedStateDrawer ? 'Hide JSON' : 'View Expected State Contract'}
+                    </button>
+                  </div>
+                  <p>• 3 files will be relocated into unified <code>/project/docs</code></p>
+                  <p>• 1 report standardized to <code>final_report_v2.pdf</code></p>
+                  <p>• 1 stale cache file flagged for deletion (Risk: 85/100, requires human approval)</p>
                   <p className="text-indigo-600 dark:text-indigo-400 font-semibold pt-1">
-                    ✓ All file move/rename operations will be 100% reversible via Undo Engine.
+                    ✓ Pre-execution checkpoint CP-001 armed for zero-data-loss rollback.
                   </p>
                 </div>
+
+                {/* Expected State JSON preview drawer */}
+                <AnimatePresence>
+                  {showExpectedStateDrawer && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="p-3 rounded-xl bg-slate-900 text-indigo-300 font-mono text-[11px] overflow-x-auto border border-indigo-950"
+                    >
+                      <pre>{JSON.stringify(expectedState, null, 2)}</pre>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
@@ -184,7 +242,7 @@ export const AgentWorkspaceView: React.FC = () => {
               <div className="flex items-center justify-between pb-3 border-b border-indigo-100 dark:border-indigo-900/60">
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                    ACTION PLAN
+                    ACTION PLAN & RISK SCORES
                   </span>
                   <h4 className="text-base font-bold text-slate-900 dark:text-white">
                     Proposed Reversible Execution Steps
@@ -192,10 +250,10 @@ export const AgentWorkspaceView: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
-                    4 SAFE ACTIONS
+                    4 AUTO-EXECUTE
                   </span>
                   <span className="text-xs font-bold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200 dark:border-rose-800">
-                    1 REQUIRES APPROVAL
+                    1 GATED (Score 85)
                   </span>
                 </div>
               </div>
@@ -224,8 +282,11 @@ export const AgentWorkspaceView: React.FC = () => {
                           <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
                         )}
                         <div>
-                          <p className="font-semibold text-slate-900 dark:text-white">
+                          <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                             {item.title}
+                            <span className="text-[10px] font-mono text-slate-400">
+                              (Score: {item.riskScore})
+                            </span>
                           </p>
                           {item.note && (
                             <p className="text-[10px] text-rose-600 dark:text-rose-400 mt-0.5">
@@ -265,13 +326,17 @@ export const AgentWorkspaceView: React.FC = () => {
               {/* Plan Action Buttons */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-indigo-100 dark:border-indigo-900/60">
                 <div className="flex items-center gap-2">
-                  {!requiresApprovalConfirmed && (
+                  {!requiresApprovalConfirmed ? (
                     <button
-                      onClick={handleApproveHighRisk}
+                      onClick={() => setShowApprovalModal(true)}
                       className="px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950 border border-rose-200 dark:border-rose-800 rounded-xl hover:bg-rose-100 transition-colors"
                     >
                       Authorize Deletion (High Risk)
                     </button>
+                  ) : (
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2.5 py-1.5 rounded-xl">
+                      ✓ Human Override Granted
+                    </span>
                   )}
                 </div>
 
@@ -316,14 +381,14 @@ export const AgentWorkspaceView: React.FC = () => {
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Instruct agent (e.g. 'Refactor src/utils.ts' or 'Group tests into /tests')..."
+              placeholder="Instruct agent (e.g. 'Organize documentation' or 'Refactor async error handlers')..."
               className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && inputMessage.trim()) {
                   addToast({
                     type: 'info',
                     title: 'Instruction Received',
-                    message: `Agent is analyzing workspace for: "${inputMessage}"`,
+                    message: `Synthesizing expected state contract for: "${inputMessage}"`,
                   });
                   setInputMessage('');
                 }
@@ -335,7 +400,7 @@ export const AgentWorkspaceView: React.FC = () => {
                   addToast({
                     type: 'info',
                     title: 'Instruction Received',
-                    message: `Agent is analyzing workspace for: "${inputMessage}"`,
+                    message: `Synthesizing expected state contract for: "${inputMessage}"`,
                   });
                   setInputMessage('');
                 }
@@ -348,17 +413,17 @@ export const AgentWorkspaceView: React.FC = () => {
 
         </div>
 
-        {/* Right Column: Virtual File System Tree (5 cols) */}
+        {/* Right Column: Virtual File System Tree */}
         <div className="lg:col-span-5 space-y-5">
           <div className="glass-panel p-6 rounded-3xl shadow-sm border border-slate-200/80 dark:border-slate-800 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <FolderTree className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Live Workspace File Tree
+                  Physical Sandbox File Tree
                 </h3>
               </div>
-              <span className="text-[10px] font-mono text-slate-400">/project</span>
+              <span className="text-[10px] font-mono text-slate-400">./demo_workspace</span>
             </div>
 
             {/* Tree Nodes */}
@@ -366,7 +431,7 @@ export const AgentWorkspaceView: React.FC = () => {
               
               <div className="flex items-center gap-2 py-1 px-2 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-950 dark:text-indigo-200">
                 <Folder className="w-4 h-4 text-indigo-500" />
-                <span className="font-bold">/project</span>
+                <span className="font-bold">/project (Sandbox Root)</span>
               </div>
 
               {/* /docs folder */}
@@ -393,7 +458,9 @@ export const AgentWorkspaceView: React.FC = () => {
                       <FileText className="w-3.5 h-3.5 text-slate-400" />
                       <span>architecture.pdf</span>
                     </div>
-                    <span className="text-[10px] text-blue-500 font-semibold">Reversible</span>
+                    <span className="text-[10px] text-blue-500 font-semibold">
+                      {simulateFailure ? 'Missing (Simulated)' : 'Reversible'}
+                    </span>
                   </div>
                 </div>
 
@@ -403,7 +470,7 @@ export const AgentWorkspaceView: React.FC = () => {
                     <FileCode className="w-3.5 h-3.5 text-amber-500" />
                     <span>app.py</span>
                   </div>
-                  <span className="text-[10px] text-slate-400">12.8 KB</span>
+                  <span className="text-[10px] text-slate-400">Preserved</span>
                 </div>
 
                 <div className="flex items-center justify-between py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800">
@@ -411,7 +478,7 @@ export const AgentWorkspaceView: React.FC = () => {
                     <FileCode className="w-3.5 h-3.5 text-indigo-400" />
                     <span>config.json</span>
                   </div>
-                  <span className="text-[10px] text-amber-500 font-semibold">Modified v2.4</span>
+                  <span className="text-[10px] text-emerald-500 font-semibold">Strict Guarded</span>
                 </div>
 
                 <div className="flex items-center justify-between py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800">
@@ -428,14 +495,60 @@ export const AgentWorkspaceView: React.FC = () => {
             {/* Tree Footer note */}
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
               <p className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Live Rollback Buffer Active
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Ground-Truth Sandbox Active
               </p>
-              Every file change maintains an in-memory diff tree for zero-data-loss rollback.
+              Mutations are applied to physical disk in <code>./demo_workspace</code> with automated rollback restore buffers.
             </div>
           </div>
         </div>
 
       </div>
+
+      {/* Human In The Loop Approval Modal */}
+      {showApprovalModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-in zoom-in-95">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-rose-100 dark:bg-rose-950 text-rose-600">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  High-Risk Action Authorization
+                </h3>
+                <span className="text-xs font-mono font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded">
+                  Risk Score: 85/100 (CRITICAL)
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              The agent wants to delete <code>/project/duplicate_cache.tmp</code>. This is an irreversible operation that cannot be undone via simple inverse paths without tape restoration.
+            </p>
+
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs space-y-1 text-slate-600 dark:text-slate-400">
+              <p className="font-semibold text-slate-800 dark:text-slate-200">Policy Requirement:</p>
+              <p>• Requires explicit human-in-the-loop authorization.</p>
+              <p>• Automated pre-deletion checkpoint CP-105 will be generated.</p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setShowApprovalModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Reject & Block
+              </button>
+              <button
+                onClick={handleAuthorizeHighRisk}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-sm shadow-rose-600/30"
+              >
+                Approve Deletion
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

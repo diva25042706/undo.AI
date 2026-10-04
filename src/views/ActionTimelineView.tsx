@@ -15,6 +15,8 @@ import {
   ArrowRight,
   ShieldCheck,
   Zap,
+  GitCommit,
+  GitBranch,
 } from 'lucide-react';
 
 export const ActionTimelineView: React.FC = () => {
@@ -51,7 +53,7 @@ export const ActionTimelineView: React.FC = () => {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1">
             <History className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-            <span>Traceable Audit Stream</span>
+            <span>Traceable Action Journal & Checkpoint Ledger</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
             Action Timeline
@@ -60,7 +62,7 @@ export const ActionTimelineView: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-            {actions.length} Total Events Logged
+            {actions.length} Journal Entries
           </span>
         </div>
       </div>
@@ -82,7 +84,7 @@ export const ActionTimelineView: React.FC = () => {
           {[
             { id: 'all', label: 'All Actions' },
             { id: 'reversible', label: 'Reversible' },
-            { id: 'undone', label: 'Recently Undone' },
+            { id: 'undone', label: 'Restored' },
             { id: 'high_risk', label: 'High & Medium Risk' },
           ].map((tab) => (
             <button
@@ -105,7 +107,7 @@ export const ActionTimelineView: React.FC = () => {
         
         {filteredActions.length === 0 ? (
           <div className="p-8 text-center text-slate-400 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800">
-            No matching actions found for the active filter.
+            No matching journal entries found for active filter.
           </div>
         ) : (
           filteredActions.map((action, index) => {
@@ -148,52 +150,60 @@ export const ActionTimelineView: React.FC = () => {
                         </span>
                         <span className="text-xs font-mono text-slate-400">({action.timeAgo})</span>
                         <span className="text-slate-300 dark:text-slate-700">•</span>
-                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1">
-                          {action.agentAvatar} {action.agentName}
+                        <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                          {action.id}
+                        </span>
+                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                        <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                          CP: {action.checkpointId || 'CP-001'}
                         </span>
                         <RiskBadge risk={action.risk} size="sm" />
+                        {action.riskScore && (
+                          <span className="text-[10px] font-mono font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-950 px-1.5 py-0.5 rounded">
+                            Score: {action.riskScore}
+                          </span>
+                        )}
                       </div>
 
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                        {action.title}
-                      </h3>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        {action.agentAvatar} {action.title}
+                      </h4>
 
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      <p className="text-xs text-slate-600 dark:text-slate-300">
                         {action.actionSummary}
                       </p>
 
-                      <div className="pt-2 flex flex-wrap items-center gap-3 text-xs font-mono text-slate-500 dark:text-slate-400">
-                        <span>Target: <span className="text-slate-800 dark:text-slate-200 font-semibold">{action.target}</span></span>
-                        <span>•</span>
-                        <span>Reversible: <span className={action.reversible ? 'text-emerald-600 font-bold' : 'text-slate-400'}>{action.reversible ? 'YES' : 'NO'}</span></span>
-                        {action.snapshotId && (
-                          <>
-                            <span>•</span>
-                            <span className="text-indigo-600 dark:text-indigo-400">{action.snapshotId}</span>
-                          </>
-                        )}
+                      {/* Path & State Transition */}
+                      <div className="mt-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs font-mono space-y-1">
+                        <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                          <span className="text-[10px] uppercase font-bold text-slate-400">Before:</span>
+                          <span className="text-slate-700 dark:text-slate-300">{action.previousStateDesc}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                          <span className="text-[10px] uppercase font-bold">After:</span>
+                          <span className="font-semibold">{action.newStateDesc}</span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Status & Action Buttons */}
-                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
+                    {/* Status & Actions */}
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0">
                       <StatusBadge status={action.status} size="sm" />
 
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-1.5 mt-2">
                         <button
                           onClick={() => setSelectedActionForDetails(action)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
+                          className="px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                         >
-                          View Details
+                          Diff
                         </button>
 
                         {action.reversible && action.status === 'completed' && (
                           <button
                             onClick={() => setSelectedActionForUndo(action)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-sm shadow-rose-600/20 transition-all hover:scale-105 active:scale-95"
+                            className="px-2.5 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors border border-rose-200 dark:border-rose-900/60"
                           >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                            <span>Undo</span>
+                            Roll Back
                           </button>
                         )}
                       </div>

@@ -1,0 +1,39 @@
+{
+  "dataset_name": "UNDO.AI Autonomous AI Agent Action Benchmark (10,000 Records)",
+  "total_records": 10000,
+  "normal_records": 9000,
+  "anomaly_records": 1000,
+  "domains": [
+    "FILE",
+    "DATABASE",
+    "CLOUD",
+    "PAYMENT",
+    "EMAIL",
+    "ECOMMERCE",
+    "DEPLOYMENT"
+  ],
+  "action_types": [
+    "CREATE",
+    "UPDATE",
+    "DELETE",
+    "MOVE",
+    "TRANSFER",
+    "DEPLOY",
+    "CANCEL",
+    "REFUND",
+    "SEND",
+    "MODIFY",
+    "RESTORE"
+  ],
+  "anomaly_distribution": {
+    "NORMAL": 9000,
+    "UNAUTHORIZED_ACTION": 200,
+    "TIMEOUT": 100,
+    "IRREVERSIBLE_ACTION": 50,
+    "WRONG_STATE": 200,
+    "POLICY_VIOLATION": 100,
+    "PARTIAL_FAILURE": 100,
+    "DUPLICATE_ACTION": 150,
+    "TOOL_FAILURE": 100
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "dataset_name": "UNDO.AI Universal Autonomous Agent Benchmark (10,000 Records)",
+  "project": "UNDO.AI \u2014 AI That Acts. You Stay In Control.",
+  "random_seed": 42,
+  "total_records": 10000,
+  "batch_count": 100,
+  "records_per_batch": 100,
+  "normal_count": 9000,
+  "anomaly_count": 1000,
+  "high_risk_count": 900,
+  "human_escalation_count": 230,
+  "domain_distribution": {
+    "AI_AGENT_OPERATIONS": {
+      "count": 2000,
+      "percentage": "20.0%"
+    },
+    "ENTERPRISE_FINANCE": {
+      "count": 2000,
+      "percentage": "20.0%"
+    },
+    "BANKING": {
+      "count": 2000,
+      "percentage": "20.0%"
+    },
+    "PAYMENT_PLATFORM": {
+      "count": 2000,
+      "percentage": "20.0%"
+    },
+    "ECOMMERCE": {
+      "count": 2000,
+      "percentage": "20.0%"
+    }
+  },
+  "anomaly_distribution": {
+    "NORMAL": {
+      "count": 9000,
+      "percentage": "90.00%"
+    },
+    "WRONG_AMOUNT": {
+      "count": 150,
+      "percentage": "1.50%"
+    },
+    "WRONG_RECIPIENT": {
+      "count": 150,
+      "percentage": "1.50%"
+    },
+    "UNKNOWN_STATE": {
+      "count": 100,
+      "percentage": "1.00%"
+    },
+    "WRONG_ACCOUNT": {
+      "count": 100,
+      "percentage": "1.00%"
+    },
+    "DUPLICATE": {
+      "count": 150,
+      "percentage": "1.50%"
+    },
+    "UNAUTHORIZED_ACTION": {
+      "count": 50,
+      "percentage": "0.50%"
+    },
+    "POLICY_VIOLATION": {
+      "count": 50,
+      "percentage": "0.50%"
+    },
+    "TOOL_FAILURE": {
+      "count": 40,
+      "percentage": "0.40%"
+    },
+    "TIMEOUT": {
+      "count": 100,
+      "percentage": "1.00%"
+    },
+    "WRONG_REFUND": {
+      "count": 50,
+      "percentage": "0.50%"
+    },
+    "PARTIAL_FAILURE": {
+      "count": 30,
+      "percentage": "0.30%"
+    },
+    "IRREVERSIBLE_ACTION": {
+      "count": 30,
+      "percentage": "0.30%"
+    }
+  },
+  "recovery_distribution": {
+    "NONE": {
+      "count": 9000,
+      "percentage": "90.00%"
+    },
+    "CANCEL": {
+      "count": 257,
+      "percentage": "2.57%"
+    },
+    "HUMAN_REVIEW": {
+      "count": 100,
+      "percentage": "1.00%"
+    },
+    "CANCEL_DUPLICATE": {
+      "count": 95,
+      "percentage": "0.95%"
+    },
+    "COMPENSATE": {
+      "count": 248,
+      "percentage": "2.48%"
+    },
+    "BLOCK_ACTION": {
+      "count": 100,
+      "percentage": "1.00%"
+    },
+    "ROLLBACK": {
+      "count": 70,
+      "percentage": "0.70%"
+    },
+    "VERIFY_BEFORE_RETRY": {
+      "count": 100,
+      "percentage": "1.00%"
+    },
+    "HUMAN_ESCALATION": {
+      "count": 30,
+      "percentage": "0.30%"
+    }
+  }
+}

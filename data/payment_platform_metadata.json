@@ -1,0 +1,64 @@
+{
+  "dataset_name": "UNDO.AI Payment Processor & Digital Wallet Anomaly Benchmark",
+  "scenario": "Payment Processor / Digital Wallet / Merchant Settlement",
+  "generated_at": "2026-10-04T18:58:48.081245+00:00",
+  "random_seed": 42,
+  "total_records": 10000,
+  "normal_records": 9300,
+  "anomaly_records": 700,
+  "anomaly_distribution": {
+    "NONE (NORMAL)": {
+      "count": 9300,
+      "percentage": "93.0%"
+    },
+    "WRONG_MERCHANT": {
+      "count": 200,
+      "percentage": "2.0%"
+    },
+    "WRONG_AMOUNT": {
+      "count": 150,
+      "percentage": "1.5%"
+    },
+    "DUPLICATE_CHARGE": {
+      "count": 100,
+      "percentage": "1.0%"
+    },
+    "REFUND_MISMATCH": {
+      "count": 100,
+      "percentage": "1.0%"
+    },
+    "UNKNOWN_PAYMENT_STATE": {
+      "count": 50,
+      "percentage": "0.5%"
+    },
+    "TIMEOUT": {
+      "count": 100,
+      "percentage": "1.0%"
+    }
+  },
+  "total_batches": 40,
+  "records_per_batch": 250,
+  "supported_payment_methods": [
+    "WALLET",
+    "CARD_SIMULATION",
+    "UPI_SIMULATION",
+    "NET_BANKING_SIMULATION",
+    "PAYMENT_GATEWAY_SIMULATION"
+  ],
+  "supported_recovery_strategies": [
+    "NONE",
+    "CANCEL",
+    "CANCEL_DUPLICATE",
+    "COMPENSATE",
+    "VERIFY_BEFORE_RETRY",
+    "HUMAN_REVIEW"
+  ],
+  "recovery_strategy_distribution": {
+    "NONE": 9300,
+    "COMPENSATE": 279,
+    "CANCEL": 213,
+    "HUMAN_REVIEW": 54,
+    "VERIFY_BEFORE_RETRY": 100,
+    "CANCEL_DUPLICATE": 54
+  }
+}

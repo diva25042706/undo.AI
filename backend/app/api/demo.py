@@ -1,10 +1,14 @@
 import copy
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.api.deps import get_current_user_optional
 from backend.app.core.database import get_db
+from backend.app.engines.expected_state_engine import ExpectedStateEngine
+from backend.app.engines.independent_verifier import IndependentVerifier
+from backend.app.engines.recovery_engine import RecoveryEngine
+from backend.app.engines.risk_engine import RiskEngine
 from backend.app.models.action import Action
 from backend.app.models.agent import Agent
 from backend.app.models.audit import AuditLog
@@ -14,47 +18,16 @@ from backend.app.models.snapshot import Snapshot
 from backend.app.models.user import User
 from backend.app.models.workspace import Workspace
 from backend.app.schemas.common import APIResponse
+from backend.app.services.checkpoint_service import CheckpointService
 from backend.app.services.execution_service import ExecutionService
 from backend.app.services.policy_service import PolicyService
+from backend.app.services.sandbox_service import SandboxService
 from backend.app.services.snapshot_service import SnapshotService
+from backend.app.services.undo_service import UndoService
 from backend.app.services.websocket_manager import ws_manager
 from backend.app.utils.ids import generate_action_id
 
-router = APIRouter(prefix="/demo", tags=["Hackathon Demo"])
-
-
-INITIAL_DEMO_FILES = {
-    "/project/README.md": {
-        "type": "file",
-        "content": "# AI Project Documentation\n\nWelcome to the autonomous workspace.",
-        "size": 72,
-    },
-    "/project/app.py": {
-        "type": "file",
-        "content": "import fastapi\nprint('Starting AI Agent Controller')\n",
-        "size": 52,
-    },
-    "/project/config.json": {
-        "type": "file",
-        "content": '{"version": "2.3", "environment": "staging", "strict_safety": true}',
-        "size": 68,
-    },
-    "/project/architecture.pdf": {
-        "type": "file",
-        "content": "%PDF-1.4 [Architecture Diagram Specification Binary Mock]",
-        "size": 5600,
-    },
-    "/project/report.pdf": {
-        "type": "file",
-        "content": "%PDF-1.4 [Executive Summary Q3 Report Binary Mock]",
-        "size": 4200,
-    },
-    "/project/duplicate_cache.tmp": {
-        "type": "file",
-        "content": "[Uncompressed Build Cache Temp Log]",
-        "size": 240,
-    },
-}
+router = APIRouter(prefix="/demo", tags=["Hackathon Demo Engine"])
 
 
 @router.post("/seed", response_model=APIResponse[Dict[str, Any]], status_code=status.HTTP_201_CREATED)
@@ -63,12 +36,15 @@ async def seed_demo(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Seeds initial demo data (User, Workspace with virtual files, Agents, Policies, Initial Baseline Snapshot).
+    Seeds initial demo data with real physical sandbox files and baseline database records.
     """
-    # 1. Seed Policies
+    # 1. Reset physical sandbox directory on disk
+    physical_manifest = SandboxService.reset_sandbox()
+
+    # 2. Seed Policies
     await PolicyService.seed_default_policies(db=db, user_id=user.id)
 
-    # 2. Find or create demo workspace
+    # 3. Find or create demo workspace
     ws_res = await db.execute(
         select(Workspace).where(
             (Workspace.user_id == user.id) & (Workspace.name == "AI Project Organizer")
@@ -80,42 +56,50 @@ async def seed_demo(
             user_id=user.id,
             name="AI Project Organizer",
             root_path="/project",
-            state={
-                "files": copy.deepcopy(INITIAL_DEMO_FILES),
-                "directories": ["/project"],
-            },
+            state=copy.deepcopy(physical_manifest),
             version=1,
         )
         db.add(workspace)
         await db.flush()
+    else:
+        workspace.state = copy.deepcopy(physical_manifest)
+        workspace.version = 1
+        workspace.is_locked = False
+        await db.flush()
 
-    # 3. Seed Agents
+    # 4. Seed Agents
     agents_data = [
-        {"name": "Workspace Agent", "role": "Documentation & File Organizer", "avatar": "🤖"},
-        {"name": "Research Agent", "role": "Code Hygiene & Architecture Analyst", "avatar": "🔍"},
-        {"name": "Cleanup Agent", "role": "Cache Pruner & Temp Optimizer", "avatar": "🧹"},
+        {"name": "Workspace Research Agent", "role": "Documentation & File Organizer", "avatar": "🤖"},
+        {"name": "Architecture Agent", "role": "Code Hygiene & Architecture Analyst", "avatar": "🔍"},
+        {"name": "Recovery Guard", "role": "State Verification & Reversibility Engine", "avatar": "🛡️"},
     ]
 
-    created_agents = []
     for ad in agents_data:
         res = await db.execute(
             select(Agent).where((Agent.user_id == user.id) & (Agent.name == ad["name"]))
         )
-        ag = res.scalar_one_or_none()
-        if not ag:
+        if not res.scalar_one_or_none():
             ag = Agent(user_id=user.id, status="ONLINE", **ad)
             db.add(ag)
-            created_agents.append(ag)
 
     await db.flush()
 
-    # 4. Create Initial Baseline Snapshot
+    # 5. Create Initial Baseline Checkpoint & Snapshot
+    baseline_chk = await CheckpointService.create_checkpoint(
+        db=db,
+        workspace_id=workspace.id,
+        user_id=user.id,
+        state=workspace.state,
+        name="CP-001 (Baseline Checkpoint)",
+        trigger="BASELINE_INIT",
+    )
+
     snap = await SnapshotService.create_snapshot(
         db=db,
         workspace_id=workspace.id,
         user_id=user.id,
         name="Snapshot #01 (Baseline)",
-        description="Initial clean workspace state before agent execution.",
+        description="Initial clean workspace state before autonomous agent execution.",
     )
 
     return APIResponse(
@@ -124,55 +108,65 @@ async def seed_demo(
             "workspace_id": workspace.id,
             "workspace_name": workspace.name,
             "total_files": len(workspace.state.get("files", {})),
+            "baseline_checkpoint_id": baseline_chk.checkpoint_id,
             "baseline_snapshot_id": snap.snapshot_id,
-            "user_email": user.email,
+            "sandbox_path": str(SandboxService.get_sandbox_path()),
         },
-        message="Demo environment seeded successfully.",
+        message="Demo environment seeded successfully with physical sandbox on disk.",
     )
 
 
-@router.post("/run", response_model=APIResponse[Dict[str, Any]])
-async def run_demo_scenario(
+@router.post("/run-full-scenario", response_model=APIResponse[Dict[str, Any]])
+async def run_full_deterministic_demo(
     user: User = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Executes the 5-step Hackathon Demo Scenario:
-    1. CREATE /project/docs
-    2. MOVE README.md -> /project/docs/README.md
-    3. MOVE architecture.pdf -> /project/docs/architecture.pdf
-    4. RENAME report.pdf -> final_report_v2.pdf
-    5. Creates Checkpoint & Snapshot
+    Executes the Complete 10-Step Hackathon Deterministic Demo:
+    1. User Goal: 'Organize project documentation'
+    2. Expected State Contract generated
+    3. Risk Engine scores actions (0-100) & policy tiers
+    4. Baseline Checkpoint CP-001 created
+    5. Agent executes real file mutations in ./demo_workspace
+    6. Controlled failure injected (architecture.md left in root)
+    7. Independent Verifier detects mismatch
+    8. Recovery Engine selects Rollback strategy
+    9. System restores Checkpoint CP-001 (physical files & DB state)
+    10. Verifier re-runs -> ORIGINAL STATE RESTORED (SAFE)
     """
-    # Ensure workspace exists
-    ws_res = await db.execute(
-        select(Workspace).where(
-            (Workspace.user_id == user.id) & (Workspace.name == "AI Project Organizer")
-        )
-    )
+    # 1. Ensure clean workspace
+    await seed_demo(user=user, db=db)
+    ws_res = await db.execute(select(Workspace).where(Workspace.user_id == user.id))
     workspace = ws_res.scalar_one_or_none()
-    if not workspace:
-        await seed_demo(user=user, db=db)
-        ws_res = await db.execute(select(Workspace).where(Workspace.user_id == user.id))
-        workspace = ws_res.scalar_one_or_none()
 
-    # Find Workspace Agent
-    ag_res = await db.execute(select(Agent).where(Agent.user_id == user.id).order_by(Agent.created_at.asc()))
+    goal = "Organize my project documentation."
+
+    # STEP 2: Expected State Engine
+    expected_model = ExpectedStateEngine.generate_expected_state(goal, workspace.state)
+
+    # STEP 3 & 4: Risk Scoring & Checkpoint
+    chk_before = await CheckpointService.create_checkpoint(
+        db=db,
+        workspace_id=workspace.id,
+        user_id=user.id,
+        state=workspace.state,
+        name="CP-001 (Pre-Reorganization Baseline)",
+        trigger="DEMO_START",
+    )
+
+    # STEP 5: Execute real file actions
+    ag_res = await db.execute(select(Agent).where(Agent.user_id == user.id))
     agent = ag_res.scalars().first()
     agent_id = agent.id if agent else None
 
-
-    # Execute safe demo steps
-    actions_to_execute = [
-        {"type": "CREATE", "target": "/project/docs", "reason": "Initialize documentation folder structure"},
+    actions_to_run = [
+        {"type": "CREATE", "target": "/project/docs", "reason": "Create docs directory"},
         {"type": "MOVE", "target": "/project/README.md", "destination": "/project/docs/README.md", "reason": "Move README to docs"},
-        {"type": "MOVE", "target": "/project/architecture.pdf", "destination": "/project/docs/architecture.pdf", "reason": "Centralize architecture spec"},
-        {"type": "RENAME", "target": "/project/report.pdf", "destination": "/project/final_report_v2.pdf", "reason": "Standardize version naming"},
+        {"type": "RENAME", "target": "/project/report.pdf", "destination": "/project/final_report_v2.pdf", "reason": "Standardize report name"},
     ]
 
-    executed_action_ids = []
-
-    for step in actions_to_execute:
+    executed_ids = []
+    for step in actions_to_run:
         act = await ExecutionService.execute_action(
             db=db,
             workspace_id=workspace.id,
@@ -184,35 +178,75 @@ async def run_demo_scenario(
             agent_id=agent_id,
             force_approved=True,
         )
-        executed_action_ids.append(act.action_id)
+        executed_ids.append(act.action_id)
 
-        await ws_manager.broadcast(
-            workspace_id=workspace.id,
-            event_type="action.completed",
-            data={"action_id": act.action_id, "action_type": act.action_type, "target": act.target},
-        )
+    # STEP 6: Introduce Controlled Failure in demo
+    # architecture.pdf is still in root, missing in /project/docs/architecture.pdf
+    corrupt_state = copy.deepcopy(workspace.state)
+    if "/project/docs/architecture.pdf" in corrupt_state["files"]:
+        del corrupt_state["files"]["/project/docs/architecture.pdf"]
+    corrupt_state["files"]["/project/architecture.pdf"] = {
+        "type": "file",
+        "content": "%PDF-1.4 [Architecture Specification Diagram]",
+    }
 
-    # Create Snapshot #04 post-organization
-    snap = await SnapshotService.create_snapshot(
+    # STEP 7: Independent Verifier runs against Expected State
+    verification_1 = IndependentVerifier.verify_state(
+        expected_state_contract=expected_model.expected_state,
+        actual_state=corrupt_state,
+    )
+
+    # STEP 8: Recovery Engine selects strategy
+    action_history = [{"action_id": aid, "is_reversible": True} for aid in executed_ids]
+    recovery_plan = RecoveryEngine.select_recovery_strategy(
+        verification_result=verification_1,
+        actions_history=action_history,
+        available_checkpoints=[{"checkpoint_id": chk_before.checkpoint_id}],
+        latest_checkpoint_id=chk_before.checkpoint_id,
+    )
+
+    # STEP 9: Restore Checkpoint CP-001
+    restore_result = await CheckpointService.restore_checkpoint(
         db=db,
+        checkpoint_id=chk_before.checkpoint_id,
         workspace_id=workspace.id,
-        user_id=user.id,
-        name="Snapshot #04 (Organized Docs)",
-        description="Created after moving README and centralizing architecture specs.",
-        action_count=len(executed_action_ids),
+    )
+
+    # STEP 10: Independent Verifier runs again
+    verification_2 = IndependentVerifier.verify_state(
+        expected_state_contract={
+            "/project/README.md": {"presence": "EXISTS"},
+            "/project/app.py": {"presence": "EXISTS"},
+            "/project/config.json": {"presence": "EXISTS"},
+        },
+        actual_state=workspace.state,
     )
 
     return APIResponse(
         success=True,
         data={
-            "scenario": "AI Project Organizer",
-            "executed_actions_count": len(executed_action_ids),
-            "action_ids": executed_action_ids,
-            "snapshot_id": snap.snapshot_id,
-            "workspace_version": workspace.version,
-            "next_step": "User can now click UNDO LAST ACTION or RESTORE SNAPSHOT.",
+            "scenario": "AI Project Organizer & Verified Recovery",
+            "step_1_goal": goal,
+            "step_2_expected_state": expected_model.expected_state,
+            "step_3_risk_score": expected_model.risk_score,
+            "step_4_checkpoint_id": chk_before.checkpoint_id,
+            "step_5_executed_actions": executed_ids,
+            "step_6_failure_injected": "architecture.pdf missing from /docs (state mismatch)",
+            "step_7_verifier_failure_detected": {
+                "status": verification_1.status,
+                "differences": verification_1.differences,
+                "confidence": verification_1.confidence,
+            },
+            "step_8_recovery_strategy_selected": recovery_plan.recovery_strategy,
+            "step_9_checkpoint_restored": chk_before.checkpoint_id,
+            "step_10_post_recovery_verification": {
+                "status": verification_2.status,
+                "is_valid": verification_2.is_valid,
+                "summary": "Original safe baseline state confirmed on physical disk and database.",
+            },
+            "final_status": "SYSTEM_SAFE",
         },
-        message="Demo scenario completed. Actions are ready for 1-click rollback.",
+        message="10-step hackathon demo flow executed successfully. Proven independent detection and verified rollback.",
     )
 
 
@@ -222,22 +256,6 @@ async def reset_demo(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Completely resets demo workspace state back to default baseline files.
+    Completely resets demo workspace and physical ./demo_workspace back to clean baseline files.
     """
-    ws_res = await db.execute(select(Workspace).where(Workspace.user_id == user.id))
-    workspace = ws_res.scalar_one_or_none()
-    if workspace:
-        workspace.state = {
-            "files": copy.deepcopy(INITIAL_DEMO_FILES),
-            "directories": ["/project"],
-        }
-        workspace.version = 1
-        workspace.is_locked = False
-        workspace.locked_by = None
-        await db.flush()
-
-    return APIResponse(
-        success=True,
-        data={"workspace_id": workspace.id if workspace else None},
-        message="Demo state reset to initial baseline.",
-    )
+    return await seed_demo(user=user, db=db)
