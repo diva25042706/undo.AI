@@ -1,0 +1,458 @@
+[
+  {
+    "id": "hotel_booking",
+    "name": "Hotel Booking (Chennai Hospitality)",
+    "category": "Hospitality",
+    "steps": [
+      {
+        "step": 1,
+        "tool": "hotel_search",
+        "action": "search_hotel",
+        "compensation": null,
+        "reversible": false,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Search available hotel room inventory in selected Chennai area."
+      },
+      {
+        "step": 2,
+        "tool": "room_selection",
+        "action": "select_room",
+        "compensation": null,
+        "reversible": false,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Select room configuration and guest requirements."
+      },
+      {
+        "step": 3,
+        "tool": "room_booking",
+        "action": "book_room",
+        "compensation": "cancel_booking",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Place atomic hold/reservation on room in booking engine."
+      },
+      {
+        "step": 4,
+        "tool": "payment_processor",
+        "action": "charge_card",
+        "compensation": "refund_payment",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Capture payment against synthetic guest card profile."
+      },
+      {
+        "step": 5,
+        "tool": "email_service",
+        "action": "email_customer",
+        "compensation": null,
+        "reversible": false,
+        "idempotent": true,
+        "approval": true,
+        "desc": "Dispatch external SMTP booking confirmation voucher (Irreversible)."
+      }
+    ]
+  },
+  {
+    "id": "ecommerce_order",
+    "name": "E-Commerce Order Fulfillment",
+    "category": "Retail & Logistics",
+    "steps": [
+      {
+        "step": 1,
+        "tool": "order_service",
+        "action": "create_order",
+        "compensation": "cancel_order",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Create database order record with status PENDING."
+      },
+      {
+        "step": 2,
+        "tool": "inventory_service",
+        "action": "reserve_inventory",
+        "compensation": "release_inventory",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Decrement SKU stock count in warehouse."
+      },
+      {
+        "step": 3,
+        "tool": "payment_service",
+        "action": "charge_card",
+        "compensation": "refund_payment",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Execute credit charge via payment gateway."
+      },
+      {
+        "step": 4,
+        "tool": "shipment_service",
+        "action": "create_shipment",
+        "compensation": "cancel_shipment",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Generate carrier airway bill and manifest."
+      },
+      {
+        "step": 5,
+        "tool": "notification_service",
+        "action": "email_customer",
+        "compensation": null,
+        "reversible": false,
+        "idempotent": true,
+        "approval": true,
+        "desc": "Send order dispatched notification to customer (Irreversible)."
+      }
+    ]
+  },
+  {
+    "id": "customer_support",
+    "name": "Customer Support Escalation",
+    "category": "CRM & Operations",
+    "steps": [
+      {
+        "step": 1,
+        "tool": "crm_service",
+        "action": "create_ticket",
+        "compensation": "close_ticket",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Create priority incident ticket in support CRM."
+      },
+      {
+        "step": 2,
+        "tool": "routing_service",
+        "action": "assign_agent",
+        "compensation": "unassign_agent",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Allocate specialist agent to ticket queue."
+      },
+      {
+        "step": 3,
+        "tool": "customer_record_service",
+        "action": "update_customer_record",
+        "compensation": "restore_customer_record",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Upgrade customer SLA tier in CRM."
+      },
+      {
+        "step": 4,
+        "tool": "resolution_service",
+        "action": "create_resolution",
+        "compensation": "revert_resolution",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Log resolution plan and issue service credit."
+      },
+      {
+        "step": 5,
+        "tool": "notification_service",
+        "action": "email_customer",
+        "compensation": null,
+        "reversible": false,
+        "idempotent": true,
+        "approval": true,
+        "desc": "Email resolution summary to customer (Irreversible)."
+      }
+    ]
+  },
+  {
+    "id": "restaurant_reservation",
+    "name": "Restaurant Table Reservation",
+    "category": "Food & Dining",
+    "steps": [
+      {
+        "step": 1,
+        "tool": "dining_search",
+        "action": "find_restaurant",
+        "compensation": null,
+        "reversible": false,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Search table availability at Chennai restaurant."
+      },
+      {
+        "step": 2,
+        "tool": "table_booking",
+        "action": "reserve_table",
+        "compensation": "release_table",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Hold dining table for requested party size."
+      },
+      {
+        "step": 3,
+        "tool": "deposit_service",
+        "action": "charge_deposit",
+        "compensation": "refund_deposit",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Capture cover deposit charge."
+      },
+      {
+        "step": 4,
+        "tool": "reservation_service",
+        "action": "create_reservation",
+        "compensation": "cancel_reservation",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Commit reservation record to host POS."
+      },
+      {
+        "step": 5,
+        "tool": "messaging_service",
+        "action": "send_confirmation",
+        "compensation": null,
+        "reversible": false,
+        "idempotent": true,
+        "approval": true,
+        "desc": "Send SMS/WhatsApp table confirmation (Irreversible)."
+      }
+    ]
+  },
+  {
+    "id": "cab_booking",
+    "name": "Cab / Ride Booking",
+    "category": "Urban Mobility",
+    "steps": [
+      {
+        "step": 1,
+        "tool": "ride_dispatcher",
+        "action": "request_ride",
+        "compensation": null,
+        "reversible": false,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Locate nearby driver in Chennai zone."
+      },
+      {
+        "step": 2,
+        "tool": "driver_assignment",
+        "action": "assign_driver",
+        "compensation": "release_driver",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Lock and allocate specific driver to trip."
+      },
+      {
+        "step": 3,
+        "tool": "trip_service",
+        "action": "confirm_ride",
+        "compensation": "cancel_ride",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Generate trip dispatch token."
+      },
+      {
+        "step": 4,
+        "tool": "fare_service",
+        "action": "charge_payment",
+        "compensation": "refund_payment",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Hold upfront estimated ride fare."
+      },
+      {
+        "step": 5,
+        "tool": "comm_service",
+        "action": "send_confirmation",
+        "compensation": null,
+        "reversible": false,
+        "idempotent": true,
+        "approval": true,
+        "desc": "Push driver ETA & vehicle details to rider (Irreversible)."
+      }
+    ]
+  },
+  {
+    "id": "event_registration",
+    "name": "Event & Conference Registration",
+    "category": "Events & Ticketing",
+    "steps": [
+      {
+        "step": 1,
+        "tool": "event_service",
+        "action": "register_participant",
+        "compensation": "cancel_registration",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Register participant profile for Chennai event."
+      },
+      {
+        "step": 2,
+        "tool": "seating_service",
+        "action": "reserve_seat",
+        "compensation": "release_seat",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Reserve designated auditorium seat."
+      },
+      {
+        "step": 3,
+        "tool": "payment_gateway",
+        "action": "process_payment",
+        "compensation": "refund_payment",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Capture conference registration fee."
+      },
+      {
+        "step": 4,
+        "tool": "ticket_generator",
+        "action": "generate_ticket",
+        "compensation": "invalidate_ticket",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Issue verifiable QR access pass."
+      },
+      {
+        "step": 5,
+        "tool": "email_dispatcher",
+        "action": "email_ticket",
+        "compensation": null,
+        "reversible": false,
+        "idempotent": true,
+        "approval": true,
+        "desc": "Email digital ticket badge and receipt (Irreversible)."
+      }
+    ]
+  },
+  {
+    "id": "delivery",
+    "name": "Parcel Delivery & Logistics",
+    "category": "Logistics",
+    "steps": [
+      {
+        "step": 1,
+        "tool": "dispatch_engine",
+        "action": "create_delivery",
+        "compensation": "cancel_delivery",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Create delivery manifest in logistics hub."
+      },
+      {
+        "step": 2,
+        "tool": "courier_service",
+        "action": "assign_driver",
+        "compensation": "unassign_driver",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Assign local delivery partner to route."
+      },
+      {
+        "step": 3,
+        "tool": "fleet_service",
+        "action": "reserve_vehicle",
+        "compensation": "release_vehicle",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Allocate vehicle cargo slot."
+      },
+      {
+        "step": 4,
+        "tool": "sorting_service",
+        "action": "dispatch_package",
+        "compensation": "recall_dispatch",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Mark parcel as out for delivery."
+      },
+      {
+        "step": 5,
+        "tool": "alert_service",
+        "action": "notify_customer",
+        "compensation": null,
+        "reversible": false,
+        "idempotent": true,
+        "approval": true,
+        "desc": "Send delivery tracking SMS link (Irreversible)."
+      }
+    ]
+  },
+  {
+    "id": "appointment_booking",
+    "name": "Healthcare & Diagnostic Appointment",
+    "category": "Healthcare",
+    "steps": [
+      {
+        "step": 1,
+        "tool": "clinic_calendar",
+        "action": "find_slot",
+        "compensation": null,
+        "reversible": false,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Check doctor/consultant slot availability."
+      },
+      {
+        "step": 2,
+        "tool": "slot_manager",
+        "action": "reserve_slot",
+        "compensation": "release_slot",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Hold 30-minute consultation slot."
+      },
+      {
+        "step": 3,
+        "tool": "billing_service",
+        "action": "process_payment",
+        "compensation": "refund_payment",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Process consultation consultation fee."
+      },
+      {
+        "step": 4,
+        "tool": "emr_service",
+        "action": "create_appointment",
+        "compensation": "cancel_appointment",
+        "reversible": true,
+        "idempotent": true,
+        "approval": false,
+        "desc": "Create appointment record in hospital EMR."
+      },
+      {
+        "step": 5,
+        "tool": "sms_service",
+        "action": "send_confirmation",
+        "compensation": null,
+        "reversible": false,
+        "idempotent": true,
+        "approval": true,
+        "desc": "Send appointment SMS pass and token (Irreversible)."
+      }
+    ]
+  }
+]

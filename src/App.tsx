@@ -10,12 +10,16 @@ import { UndoConfirmModal } from './components/modals/UndoConfirmModal';
 import { SnapshotCompareModal } from './components/modals/SnapshotCompareModal';
 import { ActionDetailsModal } from './components/modals/ActionDetailsModal';
 import { RecoveryPreviewModal } from './components/modals/RecoveryPreviewModal';
+import { HumanApprovalModal } from './components/saga/HumanApprovalModal';
+import { TestMatrixModal } from './components/saga/TestMatrixModal';
+import { IncomingCallModal } from './components/saga/IncomingCallModal';
 
 // Views
 import { LandingHeroView } from './views/LandingHeroView';
 import { DashboardView } from './views/DashboardView';
 import { PaymentGuardianView } from './views/PaymentGuardianView';
 import { AgentWorkspaceView } from './views/AgentWorkspaceView';
+import { ChennaiDatasetView } from './views/ChennaiDatasetView';
 import { ActionTimelineView } from './views/ActionTimelineView';
 import { UndoCenterView } from './views/UndoCenterView';
 import { SnapshotsView } from './views/SnapshotsView';
@@ -24,7 +28,13 @@ import { AuditLogView } from './views/AuditLogView';
 import { SettingsView } from './views/SettingsView';
 
 const MainAppContent: React.FC = () => {
-  const { activeTab, isSidebarCollapsed } = useAgent();
+  const { 
+    activeTab, 
+    sagaState, 
+    respondToApproval,
+    isTestMatrixOpen,
+    setIsTestMatrixOpen
+  } = useAgent();
 
   const renderActiveView = () => {
     switch (activeTab) {
@@ -32,10 +42,12 @@ const MainAppContent: React.FC = () => {
         return <LandingHeroView />;
       case 'dashboard':
         return <DashboardView />;
-      case 'payment':
-        return <PaymentGuardianView />;
       case 'workspace':
         return <AgentWorkspaceView />;
+      case 'chennaidataset':
+        return <ChennaiDatasetView />;
+      case 'payment':
+        return <PaymentGuardianView />;
       case 'timeline':
         return <ActionTimelineView />;
       case 'undocenter':
@@ -59,6 +71,9 @@ const MainAppContent: React.FC = () => {
       {/* Top Navigation */}
       <Navbar />
 
+      {/* Global AG02 Controller Bar */}
+      <DemoScenarioBar />
+
       {/* Main Layout Area */}
       <div className="flex-1 flex relative">
         
@@ -79,7 +94,6 @@ const MainAppContent: React.FC = () => {
 
       {/* Floating Elements */}
       <GlobalUndoButton />
-      <DemoScenarioBar />
       <ToastContainer />
       <MobileNav />
 
@@ -88,6 +102,23 @@ const MainAppContent: React.FC = () => {
       <SnapshotCompareModal />
       <ActionDetailsModal />
       <RecoveryPreviewModal />
+      
+      {/* Saga Human Approval Modal for Irreversible Actions */}
+      <HumanApprovalModal
+        step={sagaState.awaitingApprovalStep}
+        isOpen={sagaState.status === 'AWAITING_APPROVAL'}
+        onApprove={() => respondToApproval(true)}
+        onReject={() => respondToApproval(false)}
+      />
+
+      {/* In-App Realistic Smartphone Incoming Voice Call Modal (100% Free) */}
+      <IncomingCallModal />
+
+      {/* Buildathon 27-Test Matrix Evaluation Modal */}
+      <TestMatrixModal
+        isOpen={isTestMatrixOpen}
+        onClose={() => setIsTestMatrixOpen(false)}
+      />
 
     </div>
   );

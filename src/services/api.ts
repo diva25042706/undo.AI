@@ -225,5 +225,418 @@ export const ApiService = {
   async getDemo20Records(): Promise<any> {
     return await safeFetch('/dataset/demo-20');
   },
+
+  // ==========================================
+  // TRANSACTIONAL SAGA UNDO & RESEND EMAIL API
+  // ==========================================
+  async triggerSagaUndo(
+    workflowId: string,
+    params: {
+      customerName?: string;
+      email?: string;
+      idempotencyKey?: string;
+      workflowName?: string;
+      workflowType?: string;
+      refundAmount?: number;
+      currency?: string;
+      transactionId?: string;
+      compensatedSteps?: string[];
+      parameters?: Record<string, any>;
+    } = {}
+  ): Promise<{
+    success: boolean;
+    workflow_id: string;
+    status: string;
+    refund_amount: number;
+    compensated_steps: string[];
+    is_duplicate?: boolean;
+    message?: string;
+    email: {
+      recipient: string;
+      customer_name: string;
+      status: 'EMAIL_PENDING' | 'EMAIL_SENDING' | 'EMAIL_SENT' | 'EMAIL_ACCEPTED' | 'EMAIL_DELIVERED' | 'EMAIL_DELIVERY_DELAYED' | 'EMAIL_BOUNCED' | 'EMAIL_COMPLAINED' | 'EMAIL_SUPPRESSED' | 'EMAIL_FAILED' | 'EMAIL_PROVIDER_NOT_CONFIGURED' | 'EMAIL_ALREADY_SENT';
+      message_id?: string;
+      email_id?: string;
+      stage?: string;
+      stage_label?: string;
+      timestamp?: string;
+      error?: string;
+      raw_response?: any;
+    };
+  } | null> {
+    try {
+      const res = await fetch(`/api/workflows/${encodeURIComponent(workflowId)}/undo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': params.idempotencyKey || `UNDO-${workflowId}`,
+        },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        return {
+          success: false,
+          workflow_id: workflowId,
+          status: 'PARTIALLY_RECOVERED',
+          refund_amount: params.refundAmount || 750,
+          compensated_steps: params.compensatedSteps || [],
+          email: {
+            recipient: params.email || 'divakaranperumal27@gmail.com',
+            customer_name: params.customerName || 'Divakaran',
+            status: 'EMAIL_FAILED',
+            error: errJson.error || `Server responded with ${res.status}`,
+          },
+        };
+      }
+      return await res.json();
+    } catch (err: any) {
+      return {
+        success: false,
+        workflow_id: workflowId,
+        status: 'PARTIALLY_RECOVERED',
+        refund_amount: params.refundAmount || 750,
+        compensated_steps: params.compensatedSteps || [],
+        email: {
+          recipient: params.email || 'divakaranperumal27@gmail.com',
+          customer_name: params.customerName || 'Divakaran',
+          status: 'EMAIL_FAILED',
+          error: err.message || 'Network error reaching backend undo endpoint',
+        },
+      };
+    }
+  },
+
+  async retryEmailNotification(
+    workflowId: string,
+    params: {
+      customerName?: string;
+      email?: string;
+      workflowName?: string;
+      workflowType?: string;
+      refundAmount?: number;
+      currency?: string;
+      transactionId?: string;
+      compensatedSteps?: string[];
+      parameters?: Record<string, any>;
+      forceRetry?: boolean;
+    } = {}
+  ): Promise<{
+    success: boolean;
+    workflow_id: string;
+    email: {
+      recipient: string;
+      customer_name: string;
+      status: 'EMAIL_PENDING' | 'EMAIL_SENDING' | 'EMAIL_SENT' | 'EMAIL_ACCEPTED' | 'EMAIL_DELIVERED' | 'EMAIL_DELIVERY_DELAYED' | 'EMAIL_BOUNCED' | 'EMAIL_COMPLAINED' | 'EMAIL_SUPPRESSED' | 'EMAIL_FAILED' | 'EMAIL_PROVIDER_NOT_CONFIGURED' | 'EMAIL_ALREADY_SENT';
+      stage?: string;
+      stage_label?: string;
+      message_id?: string;
+      email_id?: string;
+      timestamp?: string;
+      error?: string;
+      raw_response?: any;
+    };
+  } | null> {
+    try {
+      const res = await fetch(`/api/workflows/${encodeURIComponent(workflowId)}/notify-retry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  // ==========================================
+  // REAL RESEND EMAIL DIAGNOSTICS & STATUS
+  // ==========================================
+  async sendTestEmail(params: {
+    recipient?: string;
+    customerName?: string;
+  } = {}): Promise<{
+    success: boolean;
+    stage: 'ENVIRONMENT_ERROR' | 'RESEND_API_ERROR' | 'EMAIL_ACCEPTED' | 'EMAIL_DELIVERED' | 'EMAIL_BOUNCED' | 'EMAIL_SUPPRESSED' | 'EMAIL_DELIVERY_DELAYED' | 'INVALID_RECIPIENT';
+    stage_label: string;
+    status: 'EMAIL_ACCEPTED' | 'EMAIL_DELIVERED' | 'EMAIL_FAILED' | 'EMAIL_PROVIDER_NOT_CONFIGURED';
+    email_id?: string;
+    recipient: string;
+    customer_name: string;
+    sender?: string;
+    subject?: string;
+    timestamp?: string;
+    error?: string;
+    diagnostic_tip?: string;
+    raw_response?: any;
+  } | null> {
+    try {
+      const res = await fetch('/api/notifications/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      return await res.json();
+    } catch (err: any) {
+      return {
+        success: false,
+        stage: 'RESEND_API_ERROR',
+        stage_label: 'B. RESEND API NETWORK ERROR',
+        status: 'EMAIL_FAILED',
+        recipient: params.recipient || 'divakaranperumal27@gmail.com',
+        customer_name: params.customerName || 'Divakaran',
+        error: err.message || 'Network error reaching test email endpoint',
+      };
+    }
+  },
+
+  async sendForwardConfirmationEmail(params: {
+    workflowId: string;
+    workflowType: string;
+    customerName: string;
+    recipient: string;
+    parameters?: Record<string, any>;
+  }): Promise<{
+    success: boolean;
+    workflow_id: string;
+    email: {
+      recipient: string;
+      customer_name: string;
+      status: 'EMAIL_SENT' | 'EMAIL_ACCEPTED' | 'EMAIL_FAILED' | 'EMAIL_PROVIDER_NOT_CONFIGURED';
+      stage?: string;
+      stage_label?: string;
+      email_id?: string;
+      message_id?: string;
+      timestamp?: string;
+      error?: string;
+      diagnostic_tip?: string;
+      raw_response?: any;
+    };
+  } | null> {
+    try {
+      const res = await fetch('/api/email/confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async checkEmailDeliveryStatus(emailId: string): Promise<{
+    success: boolean;
+    email_id: string;
+    status: 'EMAIL_ACCEPTED' | 'EMAIL_DELIVERED' | 'EMAIL_DELIVERY_DELAYED' | 'EMAIL_BOUNCED' | 'EMAIL_SUPPRESSED' | 'EMAIL_COMPLAINED' | 'EMAIL_FAILED' | 'EMAIL_PROVIDER_NOT_CONFIGURED';
+    stage_label?: string;
+    last_event?: string;
+    recipient?: string;
+    sender?: string;
+    subject?: string;
+    created_at?: string;
+    raw_response?: any;
+    error?: string;
+  } | null> {
+    try {
+      const res = await fetch(`/api/notifications/resend/status/${encodeURIComponent(emailId)}`);
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  // ==========================================
+  // WORKFLOW BACKEND ENGINE API
+  // ==========================================
+  async getWorkflowStatus(workflowId: string): Promise<any> {
+    try {
+      const res = await fetch(`/api/workflows/${encodeURIComponent(workflowId)}/status`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async getWorkflowLogs(workflowId: string): Promise<any> {
+    try {
+      const res = await fetch(`/api/workflows/${encodeURIComponent(workflowId)}/log`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async verifyWorkflowInvariants(workflowId: string): Promise<any> {
+    try {
+      const res = await fetch(`/api/workflows/${encodeURIComponent(workflowId)}/verify`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async executeWorkflow(workflowId: string, faultInjection: string = 'NONE'): Promise<any> {
+    try {
+      const res = await fetch(`/api/workflows/${encodeURIComponent(workflowId)}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ faultInjection }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async runAcceptanceTests(): Promise<any> {
+    try {
+      const res = await fetch('/api/tests/run');
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  // ==========================================
+  // GLM / ZHIPU AI PLANNING LAYER API
+  // ==========================================
+  async getAIConfig(): Promise<{
+    status: string;
+    provider: string;
+    model: string;
+    base_url: string;
+    configured: boolean;
+  } | null> {
+    try {
+      const res = await fetch('/api/ai/config');
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async generateAIPlan(prompt: string, customer?: { name?: string; email?: string }): Promise<{
+    success: boolean;
+    model: string;
+    provider: string;
+    is_fallback: boolean;
+    configured: boolean;
+    plan: any;
+    timestamp: string;
+  } | null> {
+    try {
+      const res = await fetch('/api/ai/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, customer }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  // ==========================================
+  // VOICE RECOVERY AGENT & EXOTEL API
+  // ==========================================
+  async triggerVoiceRecoveryCall(params: {
+    workflowId: string;
+    transactionId?: string;
+    customerName?: string;
+    customerPhone?: string;
+    workflowType?: string;
+    failureStep?: string;
+    failureReason?: string;
+    recovered?: boolean;
+    finalVerification?: string;
+    refundedAmount?: number;
+    compensationActions?: string[];
+    emailStatus?: string;
+  }): Promise<{
+    success: boolean;
+    callId?: string;
+    status: 'VOICE_PENDING' | 'VOICE_CALLING' | 'VOICE_RINGING' | 'VOICE_CONNECTED' | 'VOICE_IN_PROGRESS' | 'VOICE_COMPLETED' | 'VOICE_FAILED' | 'VOICE_NO_ANSWER' | 'VOICE_BUSY' | 'VOICE_BLOCKED' | 'VOICE_ALREADY_COMPLETED' | 'VOICE_PROVIDER_NOT_CONFIGURED';
+    customerName: string;
+    customerPhone: string;
+    maskedPhone: string;
+    speechScript: string;
+    callDurationSeconds?: number;
+    exotelSid?: string;
+    error?: string;
+    warning?: string;
+    timestamp: string;
+    context: any;
+  } | null> {
+    try {
+      const res = await fetch('/api/voice/recovery-call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async triggerVoiceConfirmationCall(params: {
+    workflowId: string;
+    customerName?: string;
+    customerPhone?: string;
+    workflowType?: string;
+    parameters?: Record<string, any>;
+  }): Promise<any> {
+    try {
+      const res = await fetch('/api/voice/confirmation-call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async getVoiceCallStatus(callId: string): Promise<any> {
+    try {
+      const res = await fetch(`/api/voice/status/${encodeURIComponent(callId)}`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async askVoiceAssistant(params: { question: string; context: any }): Promise<{
+    success: boolean;
+    question: string;
+    answer: string;
+    timestamp: string;
+  } | null> {
+    try {
+      const res = await fetch('/api/voice/dialogue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
 };
+
+
 

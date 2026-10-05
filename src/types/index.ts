@@ -365,6 +365,7 @@ export type ActiveTab =
   | 'dashboard'
   | 'payment'
   | 'workspace'
+  | 'chennaidataset'
   | 'timeline'
   | 'undocenter'
   | 'snapshots'

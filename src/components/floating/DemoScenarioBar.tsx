@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAgent } from '../../context/AgentContext';
+import { WORKFLOW_DEFINITIONS } from '../../engine/workflows';
 import { 
   Sparkles, 
   X, 
@@ -11,98 +12,102 @@ import {
   RefreshCw,
   AlertTriangle,
   ShieldCheck,
+  FileSpreadsheet,
+  PowerOff,
+  Flame,
 } from 'lucide-react';
 
 export const DemoScenarioBar: React.FC = () => {
-  const { isDemoRunning, demoStep, cancelDemo, setActiveTab, resetToDefault } = useAgent();
+  const {
+    sagaState,
+    selectWorkflow,
+    setFaultInjection,
+    runWorkflow,
+    resetWorld,
+    setIsTestMatrixOpen,
+    isDemoRunning,
+    cancelDemo,
+  } = useAgent();
 
-  if (!isDemoRunning) return null;
-
-  const steps = [
-    { step: 1, title: '1. User Request', desc: 'User commands agent to organize project' },
-    { step: 2, title: '2. Expected State', desc: 'Formulates state contract & invariants' },
-    { step: 3, title: '3. Risk Scoring', desc: 'Score 24/100 (AUTO_EXECUTE policy)' },
-    { step: 4, title: '4. Checkpoint CP-001', desc: 'Captures physical disk & SHA hash' },
-    { step: 5, title: '5. Tool Execution', desc: 'Executes file operations in sandbox' },
-    { step: 6, title: '6. Controlled Failure', desc: 'architecture.pdf left in root' },
-    { step: 7, title: '7. Independent Verifier', desc: 'Detects state deviation without LLM' },
-    { step: 8, title: '8. Recovery Engine', desc: 'Selects ROLLBACK & DAG sequence' },
-    { step: 9, title: '9. Restore CP-001', desc: 'Reverts physical files & DB state' },
-    { step: 10, title: '10. State Safe', desc: 'Re-verified: Baseline restored' },
-  ];
+  const isRunning = sagaState.status === 'RUNNING' || sagaState.status === 'COMPENSATING';
 
   return (
-    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-5xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border border-indigo-200 dark:border-indigo-800 shadow-2xl p-4 animate-in slide-in-from-top-4">
-      <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <div className="px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-spin" />
-            Hackathon Live Proof (AG02)
+    <div className="sticky top-16 z-30 w-full bg-linear-to-r from-indigo-900 via-indigo-950 to-slate-950 text-white shadow-lg border-b border-indigo-800/60 px-4 py-2.5">
+      <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
+        
+        {/* Left: Indicator & Title */}
+        <div className="flex items-center gap-2.5">
+          <div className="px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-300 font-bold uppercase tracking-wider flex items-center gap-1.5 border border-indigo-400/30 text-[10px]">
+            <Sparkles className="w-3 h-3 text-indigo-300 animate-spin" />
+            <span>AG02 LIVE CONTROLLER</span>
           </div>
-          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Scenario: “The Agent With An Undo Button — Autonomous Reversible Recovery Engine”
-          </span>
+
+          {/* Workflow Quick Select */}
+          <select
+            disabled={isRunning}
+            value={sagaState.workflowType}
+            onChange={(e) => selectWorkflow(e.target.value as any)}
+            className="bg-indigo-900/80 border border-indigo-700/80 text-white font-bold rounded-lg px-2.5 py-1 text-xs focus:outline-hidden focus:ring-1 focus:ring-indigo-400 cursor-pointer"
+          >
+            <option value="hotel_booking">🏨 Hotel Booking (T. Nagar)</option>
+            <option value="ecommerce_order">📦 E-Commerce Order (Velachery)</option>
+            <option value="customer_support">🎧 Customer Support (Anna Nagar)</option>
+            <option value="restaurant_reservation">🍽️ Restaurant Table (Mylapore)</option>
+            <option value="cab_booking">🚕 Cab / Ride Booking (OMR)</option>
+            <option value="event_registration">🎟️ Event Tech Summit (Guindy)</option>
+            <option value="delivery">🚚 Parcel Delivery (Tambaram)</option>
+            <option value="appointment_booking">🩺 Clinical Appointment (Apollo)</option>
+          </select>
+
+          {/* Fault Quick Select */}
+          <select
+            disabled={isRunning}
+            value={sagaState.faultInjection}
+            onChange={(e) => setFaultInjection(e.target.value as any)}
+            className="bg-indigo-900/80 border border-indigo-700/80 text-white font-bold rounded-lg px-2.5 py-1 text-xs focus:outline-hidden focus:ring-1 focus:ring-indigo-400 cursor-pointer"
+          >
+            <option value="NONE">✓ Happy Path (No Fault)</option>
+            <option value="FAIL_STEP_1">⚠ Fail Step 1</option>
+            <option value="FAIL_STEP_2">⚠ Fail Step 2</option>
+            <option value="FAIL_STEP_3">⚠ Fail Step 3</option>
+            <option value="FAIL_STEP_4">⚠ Fail Step 4 (Judge Recommended)</option>
+            <option value="CRASH_AFTER_STEP_1">⚡ Crash After Step 1</option>
+            <option value="CRASH_AFTER_STEP_2">⚡ Crash After Step 2</option>
+            <option value="CRASH_AFTER_STEP_3">⚡ Crash After Step 3</option>
+            <option value="FAIL_COMPENSATION">🔥 Fail Compensation (Human Escalation)</option>
+          </select>
         </div>
 
+        {/* Right: Actions */}
         <div className="flex items-center gap-2">
           <button
-            onClick={resetToDefault}
-            className="text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            title="Reset Scenario"
+            disabled={isRunning}
+            onClick={() => runWorkflow()}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Reset
+            <Play className="w-3 h-3 fill-white" />
+            <span>Run Workflow</span>
           </button>
+
           <button
-            onClick={cancelDemo}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            disabled={isRunning}
+            onClick={resetWorld}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs transition-colors cursor-pointer"
+            title="Reset Mocked World to Clean Baseline"
           >
-            <X className="w-4 h-4" />
+            <RefreshCw className="w-3 h-3" />
+            <span>Reset World</span>
+          </button>
+
+          <button
+            onClick={() => setIsTestMatrixOpen(true)}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-700/60 hover:bg-emerald-700 text-emerald-200 border border-emerald-500/40 font-bold text-xs transition-colors cursor-pointer"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Test Matrix</span>
           </button>
         </div>
-      </div>
 
-      {/* Progress Steps Timeline */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5 pt-1">
-        {steps.map((s) => {
-          const isCompleted = demoStep > s.step;
-          const isCurrent = demoStep === s.step;
-
-          return (
-            <div
-              key={s.step}
-              className={`p-1.5 rounded-xl border text-center transition-all ${
-                isCurrent
-                  ? 'bg-indigo-50/90 dark:bg-indigo-950/80 border-indigo-400 dark:border-indigo-600 ring-2 ring-indigo-500/20'
-                  : isCompleted
-                  ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50'
-                  : 'bg-slate-50 dark:bg-slate-800/30 border-slate-200/60 dark:border-slate-800 text-slate-400'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-1 mb-0.5">
-                {isCompleted ? (
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                ) : (
-                  <span
-                    className={`w-3.5 h-3.5 rounded-full text-[9px] font-bold flex items-center justify-center ${
-                      isCurrent
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    {s.step}
-                  </span>
-                )}
-                <span className={`text-[10px] font-bold truncate ${isCurrent ? 'text-indigo-950 dark:text-indigo-200' : ''}`}>
-                  {s.title}
-                </span>
-              </div>
-              <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight line-clamp-2">
-                {s.desc}
-              </p>
-            </div>
-          );
-        })}
       </div>
     </div>
   );

@@ -1,0 +1,37 @@
+{
+  "faultTypes": [
+    "NORMAL",
+    "STEP_FAILURE",
+    "TOOL_FAILURE",
+    "TIMEOUT",
+    "NETWORK_FAILURE",
+    "DUPLICATE_REQUEST",
+    "UNKNOWN_STATE",
+    "PARTIAL_FAILURE",
+    "CRASH",
+    "COMPENSATION_FAILURE",
+    "IRREVERSIBLE_ACTION",
+    "APPROVAL_REQUIRED"
+  ],
+  "positions": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "crashCheckpoints": [
+    "CRASH_AFTER_STEP_1",
+    "CRASH_AFTER_STEP_2",
+    "CRASH_AFTER_STEP_3"
+  ],
+  "recoveryRules": {
+    "STEP_FAILURE": "Compensate all preceding reversible steps in exact reverse topological order (N-1 -> 1).",
+    "TIMEOUT": "Verify authoritative world state invariants before retrying or compensating.",
+    "DUPLICATE_REQUEST": "Lookup durable idempotency key in log. If COMPLETED, return cached response with zero duplicate side effects.",
+    "UNKNOWN_STATE": "Query authoritative mocked state store before proceeding.",
+    "COMPENSATION_FAILURE": "Attempt safe retry. If remote lock conflict persists, halt and raise HUMAN INTERVENTION REQUIRED.",
+    "IRREVERSIBLE_ACTION": "Intercept execution before irreversible step (email/SMS), enforce human authorization dialog.",
+    "CRASH": "Read durable persistent log, recover completed checkpoints, resume from step K+1 without re-executing steps 1..K."
+  }
+}

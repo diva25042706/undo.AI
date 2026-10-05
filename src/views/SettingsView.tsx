@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAgent } from '../context/AgentContext';
+import { ApiService } from '../services/api';
 import {
   Settings as SettingsIcon,
   RotateCcw,
@@ -12,8 +13,17 @@ import {
   HelpCircle,
   FileCode,
   CheckCircle2,
+  XCircle,
+  AlertTriangle,
   Sliders,
   Database,
+  Mail,
+  Send,
+  Terminal,
+  ExternalLink,
+  Copy,
+  Check,
+  Clock,
 } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
@@ -30,7 +40,80 @@ export const SettingsView: React.FC = () => {
   const [dryRunMode, setDryRunMode] = useState(false);
   const [autoRollbackOnError, setAutoRollbackOnError] = useState(true);
 
+  // Email Diagnostic State
+  const [testRecipient, setTestRecipient] = useState('divakaranperumal27@gmail.com');
+  const [testCustomerName, setTestCustomerName] = useState('Divakaran');
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [testResult, setTestResult] = useState<any | null>(null);
+  const [queryEmailId, setQueryEmailId] = useState('');
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [statusQueryResult, setStatusQueryResult] = useState<any | null>(null);
+
   const isMac = typeof window !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+
+  const handleSendTestEmail = async () => {
+    if (!testRecipient.trim() || !testRecipient.includes('@')) {
+      addToast({
+        type: 'error',
+        title: 'Invalid Email',
+        message: 'Please enter a valid email address.',
+      });
+      return;
+    }
+
+    setIsSendingTest(true);
+    setTestResult(null);
+
+    try {
+      const res = await ApiService.sendTestEmail({
+        recipient: testRecipient.trim(),
+        customerName: testCustomerName.trim() || 'Divakaran',
+      });
+
+      setTestResult(res);
+
+      if (res?.success) {
+        addToast({
+          type: 'success',
+          title: 'Test Email Accepted by Resend',
+          message: `Resend accepted message ID: ${res.email_id}. Check inbox for ${res.recipient}.`,
+        });
+      } else {
+        addToast({
+          type: 'error',
+          title: res?.stage_label || 'Test Email Failed',
+          message: res?.error || 'Failed to dispatch test email',
+        });
+      }
+    } catch (err: any) {
+      setTestResult({
+        success: false,
+        stage_label: 'B. RESEND API NETWORK ERROR',
+        status: 'EMAIL_FAILED',
+        error: err.message,
+      });
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
+
+  const handleCheckStatus = async () => {
+    if (!queryEmailId.trim()) return;
+    setIsCheckingStatus(true);
+    setStatusQueryResult(null);
+
+    try {
+      const res = await ApiService.checkEmailDeliveryStatus(queryEmailId.trim());
+      setStatusQueryResult(res);
+    } catch (err: any) {
+      setStatusQueryResult({
+        success: false,
+        error: err.message,
+      });
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  };
 
   const howItWorksSteps = [
     {
@@ -79,23 +162,207 @@ export const SettingsView: React.FC = () => {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1">
             <SettingsIcon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-            <span>Engine Configuration & Documentation</span>
+            <span>Engine Configuration & Diagnostics</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Settings & Architecture
+            Settings & Provider Diagnostics
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Configure the UNDO.AI engine parameters, keyboard shortcuts, and inspect the core reversibility architecture.
+            Configure UNDO.AI parameters, inspect real email delivery pipeline, and verify external service connectivity.
           </p>
         </div>
 
         <button
           onClick={resetToDefault}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 transition-all self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 transition-all self-start sm:self-auto cursor-pointer"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>Reset Demo State</span>
         </button>
+      </div>
+
+      {/* REAL RESEND EMAIL DELIVERY DIAGNOSTIC CARD */}
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl shadow-sm border border-indigo-200/80 dark:border-indigo-900/60 space-y-6 bg-linear-to-b from-indigo-50/20 via-white to-white dark:from-indigo-950/20 dark:via-slate-900 dark:to-slate-900">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-2xl bg-indigo-600 text-white shadow-md">
+              <Mail className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Real Outbound Email Pipeline Diagnostics (Resend REST API)
+                </h3>
+                <span className="text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded">
+                  LIVE PIPELINE
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Test isolated email delivery to verify provider API key, DNS verification, and inbox arrival.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Input form & send button */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+              Customer Name
+            </label>
+            <input
+              type="text"
+              value={testCustomerName}
+              onChange={(e) => setTestCustomerName(e.target.value)}
+              placeholder="e.g. Divakaran"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-medium focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+              Recipient Email Address
+            </label>
+            <input
+              type="email"
+              value={testRecipient}
+              onChange={(e) => setTestRecipient(e.target.value)}
+              placeholder="divakaranperumal27@gmail.com"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono font-medium focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div className="flex items-end">
+            <button
+              onClick={handleSendTestEmail}
+              disabled={isSendingTest || !testRecipient.trim()}
+              className="w-full py-2.5 px-4 rounded-xl text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/30 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isSendingTest ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Connecting to Resend...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5" />
+                  <span>SEND TEST EMAIL</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Diagnostics Results Box */}
+        {testResult && (
+          <div
+            className={`p-5 rounded-2xl border transition-all space-y-3 ${
+              testResult.success
+                ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700'
+                : 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-300 dark:border-rose-700'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {testResult.success ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                )}
+                <span className="text-xs font-bold font-mono px-2.5 py-1 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800">
+                  {testResult.stage_label || testResult.stage}
+                </span>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                  {testResult.success ? 'ACCEPTED BY RESEND' : 'DELIVERY FAILED'}
+                </span>
+              </div>
+
+              <span className="text-[11px] font-mono text-slate-500">
+                {testResult.timestamp || new Date().toLocaleTimeString()}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white/70 dark:bg-slate-900/70 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+              <div>
+                <span className="text-slate-400">Recipient:</span>{' '}
+                <strong className="text-slate-900 dark:text-white font-mono">{testResult.recipient}</strong>
+              </div>
+              <div>
+                <span className="text-slate-400">Resend Email ID:</span>{' '}
+                <strong className="text-indigo-600 dark:text-indigo-400 font-mono">
+                  {testResult.email_id || 'None'}
+                </strong>
+              </div>
+            </div>
+
+            {testResult.error && (
+              <div className="text-xs font-mono text-rose-800 dark:text-rose-200 bg-rose-100/60 dark:bg-rose-900/40 p-2.5 rounded-lg border border-rose-200 dark:border-rose-800">
+                <strong>Error:</strong> {testResult.error}
+              </div>
+            )}
+
+            {testResult.diagnostic_tip && (
+              <p className="text-[11px] text-amber-800 dark:text-amber-200">
+                <strong>💡 Tip:</strong> {testResult.diagnostic_tip}
+              </p>
+            )}
+
+            {testResult.raw_response && (
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold font-mono uppercase text-slate-400">
+                  Raw Provider API Response
+                </span>
+                <pre className="p-2.5 rounded-lg bg-slate-950 text-emerald-400 font-mono text-[10px] overflow-x-auto max-h-32">
+                  {JSON.stringify(testResult.raw_response, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Query Status by Resend Email ID */}
+        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+            Query Live Resend Delivery Status by Email ID
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={queryEmailId}
+              onChange={(e) => setQueryEmailId(e.target.value)}
+              placeholder="e.g. 49a3999c-0ce1-4ea6-ab68-afcd6dc2e794"
+              className="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+            />
+            <button
+              onClick={handleCheckStatus}
+              disabled={isCheckingStatus || !queryEmailId.trim()}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+            >
+              {isCheckingStatus ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Clock className="w-3.5 h-3.5" />}
+              <span>Query Event</span>
+            </button>
+          </div>
+
+          {statusQueryResult && (
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-xs space-y-1.5 font-mono">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Current Status:</span>
+                <strong className={statusQueryResult.status === 'EMAIL_DELIVERED' ? 'text-emerald-600' : 'text-indigo-600'}>
+                  {statusQueryResult.status} ({statusQueryResult.last_event || 'accepted'})
+                </strong>
+              </div>
+              {statusQueryResult.recipient && (
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">To:</span>
+                  <span>{statusQueryResult.recipient}</span>
+                </div>
+              )}
+              {statusQueryResult.error && (
+                <div className="text-rose-600">Error: {statusQueryResult.error}</div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* HOW IT WORKS SECTION (README-Style 6-Step Guide) */}
@@ -200,7 +467,7 @@ export const SettingsView: React.FC = () => {
             <select
               value={snapshotRetention}
               onChange={(e) => setSnapshotRetention(e.target.value)}
-              className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-xs font-semibold focus:outline-hidden"
+              className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-xs font-semibold focus:outline-hidden cursor-pointer"
             >
               <option value="25">25 actions</option>
               <option value="50">50 actions</option>

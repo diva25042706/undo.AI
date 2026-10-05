@@ -1,46 +1,45 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAgent } from '../context/AgentContext';
-import { RiskBadge } from '../components/common/RiskBadge';
-import { StatusBadge } from '../components/common/StatusBadge';
+import { durableLogInstance, DurableLogEntry } from '../engine/durableLog';
 import {
   History,
   Search,
   Filter,
   RotateCcw,
-  Eye,
   CheckCircle2,
+  XCircle,
   Clock,
   Layers,
   ArrowRight,
   ShieldCheck,
+  ShieldAlert,
   Zap,
-  GitCommit,
-  GitBranch,
+  Lock,
+  Terminal,
+  Database,
+  Mail,
 } from 'lucide-react';
 
 export const ActionTimelineView: React.FC = () => {
-  const {
-    actions,
-    setSelectedActionForUndo,
-    setSelectedActionForDetails,
-  } = useAgent();
-
+  const { sagaState, resetWorld } = useAgent();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'reversible' | 'undone' | 'high_risk'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'completed' | 'compensated' | 'failed'>('all');
 
-  const filteredActions = actions.filter((a) => {
+  const allLogs = durableLogInstance.getAllLogs();
+
+  const filteredLogs = allLogs.filter((log) => {
     const matchesSearch =
-      a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.target.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.agentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.id.toLowerCase().includes(searchQuery.toLowerCase());
+      log.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.toolName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.workflowId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.idempotencyKey.toLowerCase().includes(searchQuery.toLowerCase());
 
     if (!matchesSearch) return false;
 
-    if (filterType === 'reversible') return a.reversible && a.status === 'completed';
-    if (filterType === 'undone') return a.status === 'undone';
-    if (filterType === 'high_risk') return a.risk === 'high' || a.risk === 'medium';
+    if (filterType === 'completed') return log.status === 'COMPLETED';
+    if (filterType === 'compensated') return log.status === 'COMPENSATED';
+    if (filterType === 'failed') return log.status === 'FAILED' || log.status === 'COMPENSATION_FAILED';
 
     return true;
   });
@@ -53,16 +52,16 @@ export const ActionTimelineView: React.FC = () => {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1">
             <History className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-            <span>Traceable Action Journal & Checkpoint Ledger</span>
+            <span>IMMUTABLE DURABLE EXECUTION LOG & IDEMPOTENCY LEDGER</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Action Timeline
+            Action Timeline & Durable Log
           </h2>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-            {actions.length} Journal Entries
+            {allLogs.length} Durable Log Entries
           </span>
         </div>
       </div>
@@ -75,22 +74,22 @@ export const ActionTimelineView: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search actions, files, agents or ACT-IDs..."
+            placeholder="Search action, tool, workflow ID or key..."
             className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:border-indigo-500"
           />
         </div>
 
         <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
           {[
-            { id: 'all', label: 'All Actions' },
-            { id: 'reversible', label: 'Reversible' },
-            { id: 'undone', label: 'Restored' },
-            { id: 'high_risk', label: 'High & Medium Risk' },
+            { id: 'all', label: 'All Entries' },
+            { id: 'completed', label: 'Completed' },
+            { id: 'compensated', label: 'Compensated' },
+            { id: 'failed', label: 'Failed / Escalated' },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setFilterType(tab.id as any)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 filterType === tab.id
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -102,120 +101,143 @@ export const ActionTimelineView: React.FC = () => {
         </div>
       </div>
 
-      {/* Vertical Timeline Stream */}
-      <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:top-3 before:bottom-3 before:left-3 sm:before:left-4 before:w-0.5 before:bg-linear-to-b before:from-indigo-500 before:via-slate-200 before:to-slate-200 dark:before:via-slate-800 dark:before:to-slate-800">
-        
-        {filteredActions.length === 0 ? (
-          <div className="p-8 text-center text-slate-400 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800">
-            No matching journal entries found for active filter.
+      {/* Timeline Stream */}
+      <div className="space-y-4">
+        {filteredLogs.length === 0 ? (
+          <div className="text-center py-16 glass-panel rounded-3xl border border-slate-200/80 dark:border-slate-800 p-8 space-y-3">
+            <Terminal className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto" />
+            <h3 className="text-base font-bold text-slate-700 dark:text-slate-300">
+              No Durable Log Entries Yet
+            </h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              Execute a workflow from the Dashboard or Workspace to record real-time step side-effects and compensation events.
+            </p>
           </div>
         ) : (
-          filteredActions.map((action, index) => {
-            const isLatest = index === 0;
+          <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
+            {filteredLogs.map((log) => {
+              const isCompensated = log.status === 'COMPENSATED';
+              const isFailed = log.status === 'FAILED' || log.status === 'COMPENSATION_FAILED';
+              const isCompleted = log.status === 'COMPLETED' || log.status === 'FULLY_RESTORED';
+              const isVerified = log.status === 'VERIFIED';
+              const isSent = log.status === 'SENT';
+              const isEmailFailed = log.status === 'EMAIL_FAILED';
+              const isStarted = log.status === 'STARTED';
 
-            return (
-              <motion.div
-                key={action.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.04 }}
-                className="relative group"
-              >
-                {/* Timeline Dot Marker */}
-                <div
-                  className={`absolute -left-6 sm:-left-8 top-4 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs shadow-xs ${
-                    action.status === 'undone'
-                      ? 'bg-indigo-100 dark:bg-indigo-950 border-indigo-500 text-indigo-600'
-                      : isLatest
-                      ? 'bg-indigo-600 border-white dark:border-slate-900 text-white ring-4 ring-indigo-500/20'
-                      : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-500'
-                  }`}
-                >
-                  {action.status === 'undone' ? (
-                    <RotateCcw className="w-3 h-3" />
-                  ) : (
-                    <span className="w-2 h-2 rounded-full bg-current" />
-                  )}
-                </div>
+              return (
+                <div key={log.logId} className="relative group">
+                  {/* Timeline Dot */}
+                  <div
+                    className={`absolute -left-6 top-1.5 w-5 h-5 rounded-full border-2 bg-white dark:bg-slate-900 flex items-center justify-center ${
+                      isCompensated
+                        ? 'border-purple-500 text-purple-500'
+                        : isFailed
+                        ? 'border-rose-500 text-rose-500'
+                        : isSent || isVerified || isCompleted
+                        ? 'border-emerald-500 text-emerald-500'
+                        : isEmailFailed
+                        ? 'border-amber-500 text-amber-500'
+                        : 'border-indigo-400 text-indigo-400'
+                    }`}
+                  >
+                    {isCompensated ? (
+                      <RotateCcw className="w-2.5 h-2.5" />
+                    ) : isFailed ? (
+                      <XCircle className="w-2.5 h-2.5" />
+                    ) : isSent ? (
+                      <Mail className="w-2.5 h-2.5" />
+                    ) : isVerified ? (
+                      <ShieldCheck className="w-2.5 h-2.5" />
+                    ) : isCompleted ? (
+                      <CheckCircle2 className="w-2.5 h-2.5" />
+                    ) : (
+                      <Clock className="w-2.5 h-2.5" />
+                    )}
+                  </div>
 
-                {/* Timeline Action Card */}
-                <div className="glass-panel p-5 rounded-2xl shadow-xs border border-slate-200/80 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    
-                    {/* Action Meta & Title */}
-                    <div className="space-y-1.5 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
-                          {action.timestamp}
+                  {/* Entry Card */}
+                  <div className="p-5 rounded-2xl glass-panel border border-slate-200/80 dark:border-slate-800 space-y-3 shadow-xs hover:border-indigo-200 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold text-slate-500">
+                          {log.timestamp}
                         </span>
-                        <span className="text-xs font-mono text-slate-400">({action.timeAgo})</span>
-                        <span className="text-slate-300 dark:text-slate-700">•</span>
-                        <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                          {action.id}
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                          {log.title}
+                        </h4>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                          {log.workflowId}
                         </span>
-                        <span className="text-slate-300 dark:text-slate-700">•</span>
-                        <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                          CP: {action.checkpointId || 'CP-001'}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            isCompensated
+                              ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                              : isFailed
+                              ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                              : isSent || isVerified || isCompleted
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                              : isEmailFailed
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                              : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
+                          }`}
+                        >
+                          {log.status}
                         </span>
-                        <RiskBadge risk={action.risk} size="sm" />
-                        {action.riskScore && (
-                          <span className="text-[10px] font-mono font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-950 px-1.5 py-0.5 rounded">
-                            Score: {action.riskScore}
+
+                        {log.requiresApproval && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                            <Lock className="w-2.5 h-2.5" /> APPROVAL REQ
                           </span>
                         )}
                       </div>
-
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        {action.agentAvatar} {action.title}
-                      </h4>
-
-                      <p className="text-xs text-slate-600 dark:text-slate-300">
-                        {action.actionSummary}
-                      </p>
-
-                      {/* Path & State Transition */}
-                      <div className="mt-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs font-mono space-y-1">
-                        <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                          <span className="text-[10px] uppercase font-bold text-slate-400">Before:</span>
-                          <span className="text-slate-700 dark:text-slate-300">{action.previousStateDesc}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                          <span className="text-[10px] uppercase font-bold">After:</span>
-                          <span className="font-semibold">{action.newStateDesc}</span>
-                        </div>
-                      </div>
                     </div>
 
-                    {/* Status & Actions */}
-                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0">
-                      <StatusBadge status={action.status} size="sm" />
+                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono">
+                      {log.sideEffectDesc || log.action}
+                    </p>
 
-                      <div className="flex items-center gap-1.5 mt-2">
-                        <button
-                          onClick={() => setSelectedActionForDetails(action)}
-                          className="px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                        >
-                          Diff
-                        </button>
+                    {log.compensationDesc && (
+                      <div className="p-2.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-[11px] text-purple-900 dark:text-purple-200 flex items-start gap-2">
+                        <RotateCcw className="w-3.5 h-3.5 text-purple-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold">Compensation Record: </span>
+                          <span>{log.compensationDesc}</span>
+                        </div>
+                      </div>
+                    )}
 
-                        {action.reversible && action.status === 'completed' && (
-                          <button
-                            onClick={() => setSelectedActionForUndo(action)}
-                            className="px-2.5 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors border border-rose-200 dark:border-rose-900/60"
-                          >
-                            Roll Back
-                          </button>
-                        )}
+                    {log.errorMessage && (
+                      <div className="p-2.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-[11px] text-rose-900 dark:text-rose-200 flex items-start gap-2">
+                        <ShieldAlert className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold">Fault / Error Detail: </span>
+                          <span>{log.errorMessage}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Metadata Footer */}
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between text-[10px] text-slate-400 font-mono gap-2">
+                      <div className="flex items-center gap-3">
+                        <span>idempotency_key: {log.idempotencyKey}</span>
+                        <span>tool: {log.toolName}()</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-500">
+                        <span>Reversible: {log.reversible ? 'YES' : 'NO'}</span>
+                        <span>•</span>
+                        <span>Idempotent: {log.idempotent ? 'YES' : 'NO'}</span>
                       </div>
                     </div>
-
                   </div>
                 </div>
-              </motion.div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
-
       </div>
 
     </div>

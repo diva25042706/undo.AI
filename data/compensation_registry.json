@@ -1,0 +1,392 @@
+{
+  "hotel_search": {
+    "toolName": "hotel_search",
+    "action": "search_hotel",
+    "compensationAction": null,
+    "reversible": false,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Hospitality",
+    "description": "Search available hotel room inventory in selected Chennai area."
+  },
+  "room_selection": {
+    "toolName": "room_selection",
+    "action": "select_room",
+    "compensationAction": null,
+    "reversible": false,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Hospitality",
+    "description": "Select room configuration and guest requirements."
+  },
+  "room_booking": {
+    "toolName": "room_booking",
+    "action": "book_room",
+    "compensationAction": "cancel_booking",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Hospitality",
+    "description": "Place atomic hold/reservation on room in booking engine."
+  },
+  "payment_processor": {
+    "toolName": "payment_processor",
+    "action": "charge_card",
+    "compensationAction": "refund_payment",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Hospitality",
+    "description": "Capture payment against synthetic guest card profile."
+  },
+  "email_service": {
+    "toolName": "email_service",
+    "action": "email_customer",
+    "compensationAction": null,
+    "reversible": false,
+    "idempotent": true,
+    "requiresApproval": true,
+    "workflowCategory": "Hospitality",
+    "description": "Dispatch external SMTP booking confirmation voucher (Irreversible)."
+  },
+  "order_service": {
+    "toolName": "order_service",
+    "action": "create_order",
+    "compensationAction": "cancel_order",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Retail & Logistics",
+    "description": "Create database order record with status PENDING."
+  },
+  "inventory_service": {
+    "toolName": "inventory_service",
+    "action": "reserve_inventory",
+    "compensationAction": "release_inventory",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Retail & Logistics",
+    "description": "Decrement SKU stock count in warehouse."
+  },
+  "payment_service": {
+    "toolName": "payment_service",
+    "action": "charge_card",
+    "compensationAction": "refund_payment",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Retail & Logistics",
+    "description": "Execute credit charge via payment gateway."
+  },
+  "shipment_service": {
+    "toolName": "shipment_service",
+    "action": "create_shipment",
+    "compensationAction": "cancel_shipment",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Retail & Logistics",
+    "description": "Generate carrier airway bill and manifest."
+  },
+  "notification_service": {
+    "toolName": "notification_service",
+    "action": "email_customer",
+    "compensationAction": null,
+    "reversible": false,
+    "idempotent": true,
+    "requiresApproval": true,
+    "workflowCategory": "CRM & Operations",
+    "description": "Email resolution summary to customer (Irreversible)."
+  },
+  "crm_service": {
+    "toolName": "crm_service",
+    "action": "create_ticket",
+    "compensationAction": "close_ticket",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "CRM & Operations",
+    "description": "Create priority incident ticket in support CRM."
+  },
+  "routing_service": {
+    "toolName": "routing_service",
+    "action": "assign_agent",
+    "compensationAction": "unassign_agent",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "CRM & Operations",
+    "description": "Allocate specialist agent to ticket queue."
+  },
+  "customer_record_service": {
+    "toolName": "customer_record_service",
+    "action": "update_customer_record",
+    "compensationAction": "restore_customer_record",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "CRM & Operations",
+    "description": "Upgrade customer SLA tier in CRM."
+  },
+  "resolution_service": {
+    "toolName": "resolution_service",
+    "action": "create_resolution",
+    "compensationAction": "revert_resolution",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "CRM & Operations",
+    "description": "Log resolution plan and issue service credit."
+  },
+  "dining_search": {
+    "toolName": "dining_search",
+    "action": "find_restaurant",
+    "compensationAction": null,
+    "reversible": false,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Food & Dining",
+    "description": "Search table availability at Chennai restaurant."
+  },
+  "table_booking": {
+    "toolName": "table_booking",
+    "action": "reserve_table",
+    "compensationAction": "release_table",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Food & Dining",
+    "description": "Hold dining table for requested party size."
+  },
+  "deposit_service": {
+    "toolName": "deposit_service",
+    "action": "charge_deposit",
+    "compensationAction": "refund_deposit",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Food & Dining",
+    "description": "Capture cover deposit charge."
+  },
+  "reservation_service": {
+    "toolName": "reservation_service",
+    "action": "create_reservation",
+    "compensationAction": "cancel_reservation",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Food & Dining",
+    "description": "Commit reservation record to host POS."
+  },
+  "messaging_service": {
+    "toolName": "messaging_service",
+    "action": "send_confirmation",
+    "compensationAction": null,
+    "reversible": false,
+    "idempotent": true,
+    "requiresApproval": true,
+    "workflowCategory": "Food & Dining",
+    "description": "Send SMS/WhatsApp table confirmation (Irreversible)."
+  },
+  "ride_dispatcher": {
+    "toolName": "ride_dispatcher",
+    "action": "request_ride",
+    "compensationAction": null,
+    "reversible": false,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Urban Mobility",
+    "description": "Locate nearby driver in Chennai zone."
+  },
+  "driver_assignment": {
+    "toolName": "driver_assignment",
+    "action": "assign_driver",
+    "compensationAction": "release_driver",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Urban Mobility",
+    "description": "Lock and allocate specific driver to trip."
+  },
+  "trip_service": {
+    "toolName": "trip_service",
+    "action": "confirm_ride",
+    "compensationAction": "cancel_ride",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Urban Mobility",
+    "description": "Generate trip dispatch token."
+  },
+  "fare_service": {
+    "toolName": "fare_service",
+    "action": "charge_payment",
+    "compensationAction": "refund_payment",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Urban Mobility",
+    "description": "Hold upfront estimated ride fare."
+  },
+  "comm_service": {
+    "toolName": "comm_service",
+    "action": "send_confirmation",
+    "compensationAction": null,
+    "reversible": false,
+    "idempotent": true,
+    "requiresApproval": true,
+    "workflowCategory": "Urban Mobility",
+    "description": "Push driver ETA & vehicle details to rider (Irreversible)."
+  },
+  "event_service": {
+    "toolName": "event_service",
+    "action": "register_participant",
+    "compensationAction": "cancel_registration",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Events & Ticketing",
+    "description": "Register participant profile for Chennai event."
+  },
+  "seating_service": {
+    "toolName": "seating_service",
+    "action": "reserve_seat",
+    "compensationAction": "release_seat",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Events & Ticketing",
+    "description": "Reserve designated auditorium seat."
+  },
+  "payment_gateway": {
+    "toolName": "payment_gateway",
+    "action": "process_payment",
+    "compensationAction": "refund_payment",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Events & Ticketing",
+    "description": "Capture conference registration fee."
+  },
+  "ticket_generator": {
+    "toolName": "ticket_generator",
+    "action": "generate_ticket",
+    "compensationAction": "invalidate_ticket",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Events & Ticketing",
+    "description": "Issue verifiable QR access pass."
+  },
+  "email_dispatcher": {
+    "toolName": "email_dispatcher",
+    "action": "email_ticket",
+    "compensationAction": null,
+    "reversible": false,
+    "idempotent": true,
+    "requiresApproval": true,
+    "workflowCategory": "Events & Ticketing",
+    "description": "Email digital ticket badge and receipt (Irreversible)."
+  },
+  "dispatch_engine": {
+    "toolName": "dispatch_engine",
+    "action": "create_delivery",
+    "compensationAction": "cancel_delivery",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Logistics",
+    "description": "Create delivery manifest in logistics hub."
+  },
+  "courier_service": {
+    "toolName": "courier_service",
+    "action": "assign_driver",
+    "compensationAction": "unassign_driver",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Logistics",
+    "description": "Assign local delivery partner to route."
+  },
+  "fleet_service": {
+    "toolName": "fleet_service",
+    "action": "reserve_vehicle",
+    "compensationAction": "release_vehicle",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Logistics",
+    "description": "Allocate vehicle cargo slot."
+  },
+  "sorting_service": {
+    "toolName": "sorting_service",
+    "action": "dispatch_package",
+    "compensationAction": "recall_dispatch",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Logistics",
+    "description": "Mark parcel as out for delivery."
+  },
+  "alert_service": {
+    "toolName": "alert_service",
+    "action": "notify_customer",
+    "compensationAction": null,
+    "reversible": false,
+    "idempotent": true,
+    "requiresApproval": true,
+    "workflowCategory": "Logistics",
+    "description": "Send delivery tracking SMS link (Irreversible)."
+  },
+  "clinic_calendar": {
+    "toolName": "clinic_calendar",
+    "action": "find_slot",
+    "compensationAction": null,
+    "reversible": false,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Healthcare",
+    "description": "Check doctor/consultant slot availability."
+  },
+  "slot_manager": {
+    "toolName": "slot_manager",
+    "action": "reserve_slot",
+    "compensationAction": "release_slot",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Healthcare",
+    "description": "Hold 30-minute consultation slot."
+  },
+  "billing_service": {
+    "toolName": "billing_service",
+    "action": "process_payment",
+    "compensationAction": "refund_payment",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Healthcare",
+    "description": "Process consultation consultation fee."
+  },
+  "emr_service": {
+    "toolName": "emr_service",
+    "action": "create_appointment",
+    "compensationAction": "cancel_appointment",
+    "reversible": true,
+    "idempotent": true,
+    "requiresApproval": false,
+    "workflowCategory": "Healthcare",
+    "description": "Create appointment record in hospital EMR."
+  },
+  "sms_service": {
+    "toolName": "sms_service",
+    "action": "send_confirmation",
+    "compensationAction": null,
+    "reversible": false,
+    "idempotent": true,
+    "requiresApproval": true,
+    "workflowCategory": "Healthcare",
+    "description": "Send appointment SMS pass and token (Irreversible)."
+  }
+}

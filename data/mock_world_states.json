@@ -1,0 +1,105 @@
+{
+  "city": "Chennai",
+  "stateSchema": {
+    "hospitality": {
+      "roomStatus": [
+        "AVAILABLE",
+        "RESERVED"
+      ],
+      "depositStatus": [
+        "NOT_CHARGED",
+        "CHARGED",
+        "REFUNDED"
+      ]
+    },
+    "ecommerce": {
+      "orderStatus": [
+        "NOT_CREATED",
+        "CREATED",
+        "CANCELLED"
+      ],
+      "inventoryStock": "Units Count",
+      "shipmentStatus": [
+        "NOT_CREATED",
+        "LABEL_GENERATED",
+        "CANCELLED"
+      ]
+    },
+    "crm": {
+      "ticketStatus": [
+        "NOT_CREATED",
+        "OPEN",
+        "CLOSED_CANCELLED"
+      ],
+      "agentAssigned": [
+        "UNASSIGNED",
+        "AGENT_ASSIGNED"
+      ],
+      "customerTier": [
+        "Standard",
+        "Enterprise VIP"
+      ]
+    },
+    "dining": {
+      "tableStatus": [
+        "AVAILABLE",
+        "HELD_RESERVED"
+      ],
+      "depositStatus": [
+        "NOT_CHARGED",
+        "CHARGED",
+        "REFUNDED"
+      ]
+    },
+    "mobility": {
+      "driverStatus": [
+        "AVAILABLE",
+        "LOCKED_ASSIGNED"
+      ],
+      "fareHold": [
+        "NOT_CHARGED",
+        "HELD",
+        "REFUNDED"
+      ]
+    },
+    "events": {
+      "registrationStatus": [
+        "NOT_REGISTERED",
+        "REGISTERED",
+        "CANCELLED"
+      ],
+      "seatStatus": [
+        "AVAILABLE",
+        "RESERVED"
+      ]
+    },
+    "logistics": {
+      "packageStatus": [
+        "NOT_CREATED",
+        "DISPATCHED",
+        "RECALLED_CANCELLED"
+      ],
+      "vehicleAllocation": [
+        "FREE",
+        "ALLOCATED"
+      ]
+    },
+    "healthcare": {
+      "slotStatus": [
+        "AVAILABLE",
+        "RESERVED"
+      ],
+      "appointmentStatus": [
+        "NOT_CREATED",
+        "BOOKED",
+        "CANCELLED"
+      ]
+    }
+  },
+  "verificationInvariants": [
+    "Zero Net Uncompensated Financial Liability",
+    "Inventory Restored to Baseline Count on Rollback",
+    "Room/Table/Slot Freed to AVAILABLE on Cancellation",
+    "Immutable Audit Trail Preserved in Durable Execution Log"
+  ]
+}

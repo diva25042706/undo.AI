@@ -16,6 +16,7 @@ import {
   Zap,
   HelpCircle,
   ExternalLink,
+  Database,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -39,17 +40,18 @@ export const Sidebar: React.FC = () => {
 
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'payment', label: 'Payment Guardian', icon: Zap, badge: 'Flagship', badgeColor: 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold' },
     { id: 'workspace', label: 'Agent Workspace', icon: Bot, badge: 'Live', badgeColor: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
+    { id: 'chennaidataset', label: 'Chennai Dataset', icon: Database, badge: '100k', badgeColor: 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold' },
     { id: 'timeline', label: 'Action Timeline', icon: History },
     { 
       id: 'undocenter', 
-      label: 'Undo Center', 
+      label: 'Recovery Center', 
       icon: RotateCcw, 
-      badge: stats.safeToUndoCount > 0 ? `${stats.safeToUndoCount} Safe` : undefined, 
-      badgeColor: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 font-bold' 
+      badge: 'Saga DAG', 
+      badgeColor: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 font-bold' 
     },
-    { id: 'snapshots', label: 'Snapshots', icon: Camera, badge: '4 Points' },
+    { id: 'payment', label: 'Payment Guardian', icon: Zap, badge: 'Sim', badgeColor: 'bg-slate-500/20 text-slate-600 dark:text-slate-400' },
+    { id: 'snapshots', label: 'Snapshots', icon: Camera, badge: 'Checkpoints' },
     { id: 'policies', label: 'Agent Policies', icon: ShieldAlert },
     { id: 'auditlog', label: 'Audit Log', icon: FileText },
   ];
